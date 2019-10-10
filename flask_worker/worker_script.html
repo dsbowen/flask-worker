@@ -1,0 +1,30 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function() {
+        var socket = io.connect($SOCKET_URL+"/{{ worker.model_id }}");
+        var job_status_url = (
+            "{{ url_for('_check_job_status', job_id=worker.job_id) }}"
+        );
+        socket.on("connect", function() {
+            console.log("Socket connected");
+            $.get(job_status_url, function(e) {
+                if (e.job_finished) {
+                    console.log("Job finished")
+                    window.location.replace(
+                        "{{ url_for(worker.callback) }}"
+                    );
+                };
+            });
+        });
+        socket.on("job_started", function() {
+            console.log("Job started");
+        });
+        socket.on("job_finished", function() {
+            console.log("Job finished");
+            window.location.replace(
+                "{{ url_for(worker.callback) }}"
+            );
+        });
+    });
+</script>
