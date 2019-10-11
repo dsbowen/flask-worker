@@ -1,7 +1,7 @@
 """Example app"""
 
 from factory import create_app, db, socketio
-from models import Employer, Worker
+from models import Router, Employer, Worker
 
 app = create_app()
 
@@ -12,6 +12,10 @@ def before_first_request():
     if employer is None:
         employer = Employer()
         db.session.add(employer)
+    router = Router.query.first()
+    if router is None:
+        router = Router()
+        db.session.add(router)
     db.session.commit()
 
 @app.route('/')
@@ -35,6 +39,10 @@ def test():
     worker.reset()
     db.session.commit()
     return 'Test complete'
+
+@app.route('/my-route')
+def my_route():
+    return Router.query.first().route()
 
 if __name__ == '__main__':
     socketio.run(app)

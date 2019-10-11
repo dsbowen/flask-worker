@@ -8,11 +8,13 @@ tracks a redis connection, the application database, the job execution path,
 and the web socket. These tools will be invoked by workers.
 """
 
-from flask_worker.worker_mixin import WorkerMixin
 from flask_worker.execute import execute
+from flask_worker.router_mixin import RouterMixin, set_route
+from flask_worker.worker_mixin import WorkerMixin
 
 from flask import Blueprint, current_app, request
 import rq
+
 
 class Manager():
     def __init__(self, app=None, *args, **kwargs):
