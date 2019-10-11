@@ -13,7 +13,7 @@
                 if (e.job_finished) {
                     console.log("Job finished")
                     window.location.replace(
-                        "{{ url_for(worker.callback) }}"
+                        "{{ callback_url }}"
                     );
                 };
             });
@@ -24,7 +24,7 @@
         socket.on("job_finished", function() {
             console.log("Job finished");
             window.location.replace(
-                "{{ url_for(worker.callback) }}"
+                "{{ callback_url }}"
             );
         });
     });

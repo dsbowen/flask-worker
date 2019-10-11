@@ -17,7 +17,6 @@ class Employer(db.Model):
 
     def __init__(self):
         self.worker = Worker(
-            template='loading.html', callback='callback_route',
             method_name='complex_task', kwargs={'seconds': 5}
         )
 

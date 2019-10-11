@@ -17,11 +17,24 @@ def before_first_request():
 @app.route('/')
 def index():
     employer = Employer.query.first()
-    return employer.worker()
+    worker = employer.worker
+    db.session.commit()
+    return worker()
 
 @app.route('/callback_route')
 def callback_route():
-    return 'Callback successful'
+    db.session.commit()
+    return 'Callback'
+
+@app.route('/test')
+def test():
+    employer = Employer.query.first()
+    worker = employer.worker
+    if worker.ready_to_work or worker.job_in_progress:
+        return worker()
+    worker.reset()
+    db.session.commit()
+    return 'Test complete'
 
 if __name__ == '__main__':
     socketio.run(app)

@@ -1,0 +1,16 @@
+{% block styles %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+{% endblock %}
+
+{% block content %}
+<div class="container h-100">
+    <div class="row h-100 justify-content-center align-items-center">
+        {% set loading_img = worker.loading_img or 'worker_loading.gif' %}
+        <img src="{{ url_for('static', filename=loading_img) }}" alt="Loading">
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ worker.script() }}
+{% endblock %}
