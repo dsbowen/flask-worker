@@ -29,6 +29,7 @@ class Employer(db.Model):
         for i in range(seconds):
             print('Progress: {}%'.format(100.0*i/seconds))
             time.sleep(1)
+        print('Progress: 100.0%')
         print('Complex task finished')
 
 
@@ -37,7 +38,7 @@ class Worker(WorkerMixin, db.Model):
     employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'))
 
 
-class Router4_1(RouterMixin, db.Model):
+class Router4(RouterMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
@@ -54,7 +55,7 @@ class Router4_1(RouterMixin, db.Model):
     @set_route
     def func2(self, hello_moon):
         print(hello_moon)
-        employer = get_model(Employer, 'employer4.1')
+        employer = get_model(Employer, 'employer4')
         worker = employer.worker
         return self.run_worker(
             worker=worker, next_route=self.func3, args=['hello star']
@@ -64,10 +65,10 @@ class Router4_1(RouterMixin, db.Model):
     def func3(self, hello_star):
         print(hello_star)
         db.session.commit()
-        return 'Example 4.1 finished'
+        return 'Example 4 finished'
 
 
-class Router4_2(RouterMixin, db.Model):
+class Router5(RouterMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
@@ -80,7 +81,7 @@ class Router4_2(RouterMixin, db.Model):
         self.current_route = 'func1'
         self.args = ['hello world']
         self.kwargs = {}
-        employer = get_model(Employer, 'employer4.2')
+        employer = get_model(Employer, 'employer5')
         employer.worker.reset()
 
     def func1(self, hello_world):
@@ -90,7 +91,7 @@ class Router4_2(RouterMixin, db.Model):
     @set_route
     def func2(self, hello_moon):
         print(hello_moon)
-        employer = get_model(Employer, 'employer4.2')
+        employer = get_model(Employer, 'employer5')
         worker = employer.worker
         return self.run_worker(
             worker=worker, next_route=self.func3, args=['hello star']
@@ -100,4 +101,4 @@ class Router4_2(RouterMixin, db.Model):
         print(hello_star)
         self.reset()
         db.session.commit()
-        return 'Example 4.2 finished'
+        return 'Example 5 finished'

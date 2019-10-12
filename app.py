@@ -1,13 +1,20 @@
 """Example app"""
 
 from factory import create_app, db, socketio
-from models import Employer, Router4_1, Router4_2, get_model
+from models import Employer, Router4, Router5, get_model
 
 app = create_app()
 
 @app.before_first_request
 def before_first_request():
     db.create_all()
+
+@app.route('/example1-no-worker')
+def example1_no_worker():
+    print('Request for /example1-no-worker')
+    employer = get_model(Employer, 'employer1-no-worker')
+    employer.complex_task(seconds=5)
+    return 'Example 1 (no worker) finished'
 
 @app.route('/example1')
 def example1():
@@ -47,6 +54,8 @@ def callback_route():
     worker = employer.worker
     if not worker.job_finished:
         return worker()
+    worker.reset()
+    db.session.commit()
     return 'Example 3 finished'
 
 @app.route('/example4-no-router')
@@ -69,27 +78,17 @@ def func3(hello_star):
     db.session.commit()
     return 'Example 4 (no router) finished'
 
-@app.route('/example4.1')
-def example4_1():
-    print('Request for /example4.1')
-    router = get_model(Router4_1, 'router4.1')
+@app.route('/example4')
+def example4():
+    print('Request for /example4')
+    router = get_model(Router4, 'router4')
     return router.route()
 
-@app.route('/example4.2')
-def example4_2():
-    print('Requestion for /example4.2')
-    router = get_model(Router4_2, 'router4.2')
+@app.route('/example5')
+def example5():
+    print('Request for /example5')
+    router = get_model(Router5, 'router5')
     return router.route()
 
 if __name__ == '__main__':
     socketio.run(app)
-
-@app.shell_context_processor
-def make_shell_context():
-    db.create_all()
-    employer = Employer.query.first()
-    if employer is None:
-        employer = Employer()
-        db.session.add(employer)
-        db.session.commit()
-    return globals()
