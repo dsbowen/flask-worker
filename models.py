@@ -9,23 +9,30 @@ class Router(RouterMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     def __init__(self):
-        self.default_route = 'route1'
+        self.current_route = 'route1'
+        self.args = ['hello world']
 
     @set_route
-    def route1(self):
-        print('route1')
-        return self.route2()
+    def route1(self, greeting):
+        print(greeting)
+        return self.route2('hello moon')
 
     @set_route
-    def route2(self):
-        print('route2')
+    def route2(self, greeting):
+        print(greeting)
         worker = Employer.query.first().worker
-        return self.run_worker(worker, self.route3)
+        return self.run_worker(
+            worker, self.route3, args=['hello star']
+        )
 
     @set_route
-    def route3(self):
-        print('route3')
-        return 'Hello world'
+    def route3(self, greeting):
+        print(greeting)
+        self.current_route = 'route1'
+        self.args = ['hello world']
+        worker = Employer.query.first().worker
+        worker.reset()
+        return 'Goodbye World'
 
 class Employer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
