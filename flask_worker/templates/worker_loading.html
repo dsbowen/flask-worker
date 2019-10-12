@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="container h-100">
-    <div class="row h-100 justify-content-center align-items-center">
-        {% set loading_img = worker.loading_img or 'worker_loading.gif' %}
-        <img src="{{ url_for('static', filename=loading_img) }}" alt="Loading">
-    </div>
+<div class="h-100 row justify-content-center align-items-center">
+    {% set img_src = url_for('static', filename=worker.loading_img) %}
+    <img src="{{ img_src }}" alt="Loading">
+</div>
 </div>
 {% endblock %}
 

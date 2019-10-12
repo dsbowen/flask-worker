@@ -1,9 +1,9 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 <script type="text/javascript" charset="utf-8">
-    $SOCKET_URL = location.protocol+"//"+document.domain+':'+location.port;
+    var socket_url = location.protocol+"//"+document.domain+':'+location.port;
     $(document).ready(function() {
-        var socket = io.connect($SOCKET_URL+"/{{ worker.model_id }}");
+        var socket = io.connect(socket_url+"/{{ worker.model_id }}");
         var job_status_url = (
             "{{ url_for('_check_job_status', job_id=worker.job_id) }}"
         );

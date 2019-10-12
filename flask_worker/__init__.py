@@ -21,7 +21,9 @@ class Manager():
         self.connection = None
         self.db = None
         self.execute = 'tasks.execute_job'
+        self.loading_img = 'worker_loading.gif'
         self.socketio = None
+        self.template = 'worker_loading.html'
 
         self.setattrs(*args, **kwargs)
         if app is not None:
@@ -72,9 +74,12 @@ class Manager():
             return {'job_finished': job.is_finished}
     
     def setattrs(
-            self, connection=None, db=None, execute=None, socketio=None 
+            self, connection=None, db=None, execute=None, 
+            loading_img=None, socketio=None, template=None 
         ):
         self.connection = connection or self.connection
         self.db = db or self.db
         self.execute = execute or self.execute
+        self.loading_img = loading_img or self.loading_img
         self.socketio = socketio or self.socketio
+        self.template = template or self.template

@@ -34,7 +34,7 @@ def callback_route():
 def test():
     employer = Employer.query.first()
     worker = employer.worker
-    if worker.ready_to_work or worker.job_in_progress:
+    if not worker.job_finished:
         return worker()
     worker.reset()
     db.session.commit()

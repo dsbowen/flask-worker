@@ -11,20 +11,34 @@ class WorkerMixin():
     method_name = Column(String)
     args = Column(MutableListType)
     kwargs = Column(MutableDictType)
-    template = Column(String)
+    _template = Column(String)
     callback = Column(String)
     job_finished = Column(Boolean, default=False)
     job_in_progress = Column(Boolean, default=False)
     job_id = Column(String)
-    loading_img = Column(String)
+    _loading_img = Column(String)
+
+    @property
+    def template(self):
+        default_template = current_app.extensions['manager'].template
+        return self._template or default_template
+    
+    @template.setter
+    def template(self, value):
+        self._template = value
+    
+    @property
+    def loading_img(self):
+        default_img = current_app.extensions['manager'].loading_img
+        return self._loading_img or default_img
+    
+    @loading_img.setter
+    def loading_img(self, value):
+        self._loading_img = value
 
     @property
     def model_id(self):
         return self.__class__.__name__+'-'+str(inspect(self).identity[0])
-
-    @property
-    def ready_to_work(self):
-        return not (self.job_in_progress or self.job_finished)
 
     def __init__(
             self, method_name=None, args=[], kwargs={}, 
@@ -43,8 +57,7 @@ class WorkerMixin():
     def __call__(self):
         if not self.job_in_progress:
             self.enqueue()
-        template = self.template or 'worker_loading.html'
-        html = render_template(template, worker=self)
+        html = render_template(self.template, worker=self)
         return BeautifulSoup(html, 'html.parser').prettify()
 
     def enqueue(self):

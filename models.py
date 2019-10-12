@@ -1,6 +1,6 @@
 from factory import db
 
-from flask_worker import set_route, RouterMixin, WorkerMixin
+from flask_worker import RouterMixin, WorkerMixin, set_route
 
 import time
 
@@ -9,29 +9,29 @@ class Router(RouterMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.current_route = 'route1'
         self.args = ['hello world']
+        worker = Employer.query.first().worker
+        worker.reset()
 
-    @set_route
-    def route1(self, greeting):
-        print(greeting)
+    def route1(self, hello_world):
+        print(hello_world)
         return self.route2('hello moon')
 
     @set_route
-    def route2(self, greeting):
-        print(greeting)
+    def route2(self, hello_moon):
+        print(hello_moon)
         worker = Employer.query.first().worker
         return self.run_worker(
             worker, self.route3, args=['hello star']
         )
 
-    @set_route
-    def route3(self, greeting):
-        print(greeting)
-        self.current_route = 'route1'
-        self.args = ['hello world']
-        worker = Employer.query.first().worker
-        worker.reset()
+    def route3(self, hello_star):
+        print(hello_star)
+        self.reset()
         return 'Goodbye World'
 
 class Employer(db.Model):

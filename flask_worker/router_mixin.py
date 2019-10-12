@@ -29,6 +29,6 @@ class RouterMixin():
         return page_html
 
     def run_worker(self, worker, next_route, args=[], kwargs={}):
-        if worker.ready_to_work or worker.job_in_progress:
+        if not worker.job_finished:
             return worker()
         return next_route(*args, **kwargs)
