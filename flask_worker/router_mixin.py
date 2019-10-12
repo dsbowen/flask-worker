@@ -16,12 +16,16 @@ def set_route(func):
 
 class RouterMixin():
     current_route = Column(String)
-    args = Column(MutableListType, default=[])
-    kwargs = Column(MutableDictType, default={})
+    args = Column(MutableListType)
+    kwargs = Column(MutableDictType)
+
+    def __init__(self, *args, **kwargs):
+        self.args = self.args or []
+        self.kwargs = self.kwargs or {}
+        super().__init__(*args, **kwargs)
 
     def route(self):
-        current_route = self.current_route
-        page_html = getattr(self, current_route)(
+        page_html = getattr(self, self.current_route)(
             *self.args, **self.kwargs
         )
         db = current_app.extensions['manager'].db
