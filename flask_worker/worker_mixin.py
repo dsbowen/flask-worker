@@ -1,4 +1,16 @@
-"""Worker Mixin"""
+"""Worker Mixin
+
+The worker executes a complex task for its employer using a Redis queue. 
+
+When called, it enqueues a job (one of its employer's methods specified by 
+`method_name`). The worker returns a loading page, specified by its 
+`template`. The default loading template displays a loading image (specified 
+by `loading_img`).
+
+When a Redis worker grabs the enqueued job, it executes it with the worker's 
+args and kwargs. After execution, the worker's script replaces the client's 
+window location with a call to its `callback` view function.
+"""
 
 from bs4 import BeautifulSoup
 from flask import Markup, current_app, render_template, request
@@ -61,10 +73,14 @@ class WorkerMixin():
         return BeautifulSoup(html, 'html.parser').prettify()
 
     def enqueue(self):
+        """Send a job to the Redis Queue"""
         worker_id = inspect(self).identity[0]
         job = current_app.task_queue.enqueue(
-            current_app.extensions['manager'].execute,
-            kwargs={'worker_class': type(self), 'worker_id': worker_id}
+            'flask_worker.tasks.execute',
+            kwargs={
+                'app_import': current_app.extensions['manager'].app_import,
+                'worker_class': type(self), 
+                'worker_id': worker_id}
         )
         self.job_finished, self.job_in_progress = False, True
         self.job_id = job.get_id()
@@ -72,12 +88,20 @@ class WorkerMixin():
         db.session.commit()
 
     def script(self):
+        """Return the worker script
+        
+        Include this in the `scripts` block of the loading template.
+        """
         callback = self.callback or request.url_rule
         return Markup(render_template(
             'worker_script.html', worker=self, callback_url=callback
         ))
 
     def execute_job(self):
+        """Execute a job (i.e. its employer's task)
+
+        This method is called by a Redis worker.
+        """
         if self.employer is not None and self.method_name is not None:
             func = getattr(self.employer, self.method_name)
             result = func(*self.args, **self.kwargs)
