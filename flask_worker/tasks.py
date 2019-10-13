@@ -3,7 +3,11 @@
 This function is used by a Worker to execute its job (i.e. its 
 Employer's complex task).
 
-The worker's script connects a socket which listens for a 'job_finished' emission on a dedicated namespace for the worker (specified by the worker's `model_id`). When the socket hears the 'job_finished' emission, it replaces the worker's loading page with a request to the worker's `callback` view function.
+The worker's script connects a socket which listens for a 'job_finished' 
+emission on a dedicated namespace for the worker (specified by the worker's 
+`model_id`). When the socket hears the 'job_finished' emission, it replaces 
+the worker's loading page with a request to the worker's `callback` view 
+function.
 """
 
 from pydoc import locate
