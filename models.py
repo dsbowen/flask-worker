@@ -1,10 +1,25 @@
+"""Database models
+
+This file defines Employer and Worker models.
+
+An Employer is a model with a complex task which must be run before a page 
+loads. It employs a Worker to execute its complex task in the background. 
+While working, the Worker sends the client a loading page.
+"""
+
 from factory import db
 
-from flask_worker import RouterMixin, WorkerMixin, set_route
+# 1. Import the worker mixin
+from flask_worker import WorkerMixin
 
 import time
 
 def get_model(model_class, name):
+    """Convenience method for database querying
+
+    This function returns a model of the type model_class with the specified 
+    name. If this model does not yet exist, this function creates it.
+    """
     model = model_class.query.filter_by(name=name).first()
     if not model:
         model = model_class(name=name)
@@ -14,12 +29,17 @@ def get_model(model_class, name):
 
 
 class Employer(db.Model):
+    """Employer model"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+
+    # 2. Add a worker to the employer
+    # The worker must reference its employer by the attribute name 'employer'
     worker = db.relationship('Worker', uselist=False, backref='employer')
 
     def __init__(self, name):
         self.name = name
+        # 3. Instantiate a worker
         self.worker = Worker(
             method_name='complex_task', kwargs={'seconds': 5}
         )
@@ -33,72 +53,7 @@ class Employer(db.Model):
         print('Complex task finished')
 
 
+# 4. Create a Worker model with the worker mixin
 class Worker(WorkerMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'))
-
-
-class Router4(RouterMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-
-    def __init__(self, name):
-        self.name = name
-        self.current_route = 'func1'
-        self.args = ['hello world']
-        super().__init__()
-
-    def func1(self, hello_world):
-        print(hello_world)
-        return self.func2('hello moon')
-
-    @set_route
-    def func2(self, hello_moon):
-        print(hello_moon)
-        employer = get_model(Employer, 'employer4')
-        worker = employer.worker
-        return self.run_worker(
-            worker=worker, next_route=self.func3, args=['hello star']
-        )
-
-    @set_route
-    def func3(self, hello_star):
-        print(hello_star)
-        db.session.commit()
-        return 'Example 4 finished'
-
-
-class Router5(RouterMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-
-    def __init__(self, name):
-        self.name = name
-        self.reset()
-        super().__init__()
-
-    def reset(self):
-        self.current_route = 'func1'
-        self.args = ['hello world']
-        self.kwargs = {}
-        employer = get_model(Employer, 'employer5')
-        employer.worker.reset()
-
-    def func1(self, hello_world):
-        print(hello_world)
-        return self.func2('hello moon')
-
-    @set_route
-    def func2(self, hello_moon):
-        print(hello_moon)
-        employer = get_model(Employer, 'employer5')
-        worker = employer.worker
-        return self.run_worker(
-            worker=worker, next_route=self.func3, args=['hello star']
-        )
-
-    def func3(self, hello_star):
-        print(hello_star)
-        self.reset()
-        db.session.commit()
-        return 'Example 5 finished'
