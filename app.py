@@ -21,8 +21,8 @@ This view function illustrates the basic problem Flask-Worker solves; a model
 
 What we want is for the complex task to run once, and for the view function 
 to return a loading page while the complex task is running. While the task is 
-running, additional requests to the view function should not cause the 
-complex task to be run multiple times.
+running, additional requests to this route should not cause the complex task 
+to run multiple times.
 
 However, in this example, there is no loading page, and every request to the 
 route queues up another run of the complex task.
