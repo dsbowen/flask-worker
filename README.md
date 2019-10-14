@@ -11,14 +11,15 @@ Suppose a model (the employer) must run a long, complex task before the next pag
 What we want is for the complex task to run once, and for the view function to return a loading page while the complex task is running. Additional requests to this route should not cause the complex task to run multiple times. Once the task is complete, the loaded page should appear automatically. We can achieve this with the following:
 
 ```python
-@app.route('/example1')
-def example1():
-    print('Request for /example1')
-    employer = get_model(Employer, 'employer1')
+@app.route('/')
+def index():
+    employer = Employer.query.filter_by(name='name').first()
+    if employer.worker is None:
+        employer.worker = Worker(method_name='complex_task')
     worker = employer.worker
     if not worker.job_finished:
         return worker()
-    return 'Example 1 finished'
+    return 'Hello World'
 ```
 
 ## Documentation

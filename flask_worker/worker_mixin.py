@@ -50,7 +50,7 @@ class WorkerMixin():
 
     @property
     def model_id(self):
-        return self.__class__.__name__+'-'+str(inspect(self).identity[0])
+        return self.__class__.__name__+'-'+str(self.get_id())
 
     def __init__(
             self, method_name=None, args=[], kwargs={}, 
@@ -67,20 +67,29 @@ class WorkerMixin():
         super().__init__(*init_args, **init_kwargs)
     
     def __call__(self):
+        if self.get_id() is None:
+            db = current_app.extensions['manager'].db
+            db.session.add(self)
+            db.session.commit()
         if not self.job_in_progress:
             self.enqueue()
         html = render_template(self.template, worker=self)
         return BeautifulSoup(html, 'html.parser').prettify()
 
+    def get_id(self):
+        id = inspect(self).identity
+        if id:
+            return id[0]
+        return None
+
     def enqueue(self):
         """Send a job to the Redis Queue"""
-        worker_id = inspect(self).identity[0]
         job = current_app.task_queue.enqueue(
             'flask_worker.tasks.execute',
             kwargs={
                 'app_import': current_app.extensions['manager'].app_import,
                 'worker_class': type(self), 
-                'worker_id': worker_id}
+                'worker_id': self.get_id()}
         )
         self.job_finished, self.job_in_progress = False, True
         self.job_id = job.get_id()

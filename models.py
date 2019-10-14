@@ -44,7 +44,7 @@ class Employer(db.Model):
             method_name='complex_task', kwargs={'seconds': 5}
         )
 
-    def complex_task(self, seconds):
+    def complex_task(self, seconds=5):
         print('Complex task started')
         for i in range(seconds):
             print('Progress: {}%'.format(100.0*i/seconds))
