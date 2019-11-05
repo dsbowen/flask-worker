@@ -30,6 +30,7 @@ def create_app():
     app.config['EXPLAIN_TEMPLATE_LOADING'] = True
     app.redis = Redis.from_url('redis://')
     app.task_queue = Queue('my-task-queue', connection=app.redis)
+
     db.init_app(app)
     socketio.init_app(app, message_queue='redis://')
     # 3. Initialize the manager with the application

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
-Name: flask-worker-dsbowen
-Version: 0.0.4
+Name: flask-worker
+Version: 0.0.3
 Summary: Flask-Worker simplifies interaction with a Redis Queue for executing long-running tasks in a Flask application.
 Home-page: https://github.com/dsbowen/flask-worker
 Author: Dillon Bowen

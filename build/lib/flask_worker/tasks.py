@@ -11,9 +11,13 @@ function.
 """
 
 from pydoc import locate
+import os
+import sys
 
 def execute(app_import, worker_class, worker_id):
+    sys.path.insert(0, os.getcwd())
     app = locate(app_import)
+    sys.path.pop(0)
     app.app_context().push()
     manager = app.extensions['manager']
     db, socketio = manager.db, manager.socketio

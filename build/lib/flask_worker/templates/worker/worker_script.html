@@ -1,0 +1,44 @@
+<!-- Worker script 
+
+The worker script replaces the worker's loading page with a call to a its 
+worker's callback URL once its job is finished.
+
+The script begins by connecting a websocket which listens on a dedicated 
+namespace for a worker (specified by the worker's `model_id`). On connection,
+the socket checks if the worker's job has already finished. (Sometimes a 
+job will finish before the socket can connect). Once the socket is 
+connected, if the worker's job is in progress, it listens for a 
+'job_finished' emission.
+-->
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script type="text/javascript" charset="utf-8">
+    var socket_url = location.protocol+"//"+document.domain+':'+location.port;
+    $(document).ready(function() {
+        var socket = io.connect(socket_url+"/{{ worker.model_id }}");
+        var job_status_url = (
+            "{{ url_for('_check_job_status', job_id=worker.job_id) }}"
+        );
+        socket.on("connect", function() {
+            console.log("Socket connected");
+            $.get(job_status_url, function(e) {
+                if (e.job_finished) {
+                    console.log("Job finished")
+                    window.location.replace(
+                        "{{ callback_url }}"
+                    );
+                };
+            });
+        });
+        socket.on("job_started", function() {
+            console.log("Job started");
+        });
+        socket.on("job_finished", function() {
+            console.log("Job finished");
+            window.location.replace(
+                "{{ callback_url }}"
+            );
+        });
+    });
+</script>

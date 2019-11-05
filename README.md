@@ -8,7 +8,9 @@ Long-running tasks are managed by a Worker, who sends the client a loading page 
 
 Suppose a model (the employer) must run a long, complex task before the next page loads.
 
-What we want is for the complex task to run once, and for the view function to return a loading page while the complex task is running. Additional requests to this route should not cause the complex task to run multiple times. Once the task is complete, the loaded page should appear automatically. We can achieve this with the following:
+What we want is for the complex task to run once, and for the view function to return a loading page while the complex task is running. Additional requests to this route should not cause the complex task to run multiple times. Once the task is complete, the loaded page should appear automatically. 
+
+After setup, we can achieve this with the following:
 
 ```python
 @app.route('/')

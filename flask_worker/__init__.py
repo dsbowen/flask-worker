@@ -18,12 +18,12 @@ import rq
 class Manager():
     def __init__(self, app=None, *args, **kwargs):
         self.app_import = 'app.app'
+        self.blueprint = None
         self.connection = None
         self.db = None
         self.loading_img = 'worker_loading.gif'
         self.socketio = None
-        self.template = 'worker_loading.html'
-
+        self.template = 'worker/worker_loading.html'
         self.setattrs(*args, **kwargs)
         if app is not None:
             self._init_app(app)
@@ -48,8 +48,7 @@ class Manager():
         bp = Blueprint(
             'worker',
             __name__,
-            template_folder='templates',
-            static_url_path=app.static_url_path+'/flask_worker'
+            template_folder='templates'
         )
         app.register_blueprint(bp)
         self.connection = self.connection or app.redis
@@ -74,10 +73,11 @@ class Manager():
             return {'job_finished': job.is_finished}
     
     def setattrs(
-            self, app_import=None, connection=None, db=None, 
-            loading_img=None, socketio=None, template=None 
+            self, app_import=None, blueprint=None, connection=None, 
+            db=None, loading_img=None, socketio=None, template=None 
         ):
         self.app_import = app_import or self.app_import
+        self.blueprint = blueprint or self.blueprint
         self.connection = connection or self.connection
         self.db = db or self.db
         self.loading_img = loading_img or self.loading_img

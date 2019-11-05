@@ -1,0 +1,2 @@
+recursive-include flask_worker/static *
+recursive-include flask_worker/templates *.html
