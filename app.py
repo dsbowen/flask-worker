@@ -153,4 +153,4 @@ def example5():
     return router.route()
 
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app, debug=True)

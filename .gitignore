@@ -1,3 +1,5 @@
 __pycache__
-flask-worker-venv
+*.egg-info/
+dist/
+flask-worker-venv/
 data.db
