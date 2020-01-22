@@ -119,10 +119,11 @@ class WorkerMixin():
         
         Include this in the `scripts` block of the loading template.
         """
-        callback = self.callback or request.url_rule
+        callback = self.callback or request.url
         return Markup(render_template(
             'worker/worker_script.html', 
-            worker=self, callback_url=callback
+            worker=self, 
+            callback_url=callback
         ))
 
     def execute_job(self):

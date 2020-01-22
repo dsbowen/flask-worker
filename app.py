@@ -59,9 +59,11 @@ Example 2 is similar to Example 1. However, once the worker finishes its job,
 it is reset. If the client requests this route after the job has finished, 
 the worker will queue up a new job.
 """
+from flask import request
 @app.route('/example2')
 def example2():
     print('Request for /example2')
+    print(request.args)
     employer = get_model(Employer, 'employer2')
     worker = employer.worker
     if not worker.job_finished:

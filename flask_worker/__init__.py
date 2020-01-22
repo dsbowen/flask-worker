@@ -11,25 +11,31 @@ database, and the web socket. These tools will be invoked by workers.
 from flask_worker.router_mixin import RouterMixin, set_route
 from flask_worker.worker_mixin import WorkerMixin
 
-from flask import Blueprint, current_app, request
+from flask import Blueprint, current_app, request, url_for
 import rq
+
+from copy import copy
+
+default_settings = {
+    'app_import': 'app.app',
+    'connection': None,
+    'db': None,
+    'loading_img': 'worker_loading.gif',
+    'socketio': None,
+    'template': 'worker/worker_loading.html',
+}
 
 
 class Manager():
-    def __init__(self, app=None, *args, **kwargs):
-        self.app_import = 'app.app'
-        self.blueprint = None
-        self.connection = None
-        self.db = None
-        self.loading_img = 'worker_loading.gif'
-        self.socketio = None
-        self.template = 'worker/worker_loading.html'
-        self.setattrs(*args, **kwargs)
+    def __init__(self, app=None, **kwargs):
+        settings = copy(default_settings)
+        settings.update(kwargs)
+        [setattr(self, key, val) for key, val in settings.items()]
         if app is not None:
             self._init_app(app)
         
-    def init_app(self, app, *args, **kwargs):
-        self.setattrs(*args, **kwargs)
+    def init_app(self, app, **kwargs):
+        [setattr(self, key, val) for key, val in kwargs.items()]
         self._init_app(app)
 
     def _init_app(self, app):
@@ -68,18 +74,12 @@ class Manager():
             the 'job_finished' emission and continue running indefinitely.
             """
             job_id = request.args.get('job_id')
-            connection = current_app.extensions['manager'].connection
-            job = rq.job.Job.fetch(job_id, connection=connection)
+            job = rq.job.Job.fetch(job_id, connection=self.connection)
             return {'job_finished': job.is_finished}
-    
-    def setattrs(
-            self, app_import=None, blueprint=None, connection=None, 
-            db=None, loading_img=None, socketio=None, template=None 
-        ):
-        self.app_import = app_import or self.app_import
-        self.blueprint = blueprint or self.blueprint
-        self.connection = connection or self.connection
-        self.db = db or self.db
-        self.loading_img = loading_img or self.loading_img
-        self.socketio = socketio or self.socketio
-        self.template = template or self.template
+
+    @property
+    def loading_img_src(self):
+        try:
+            return url_for('static', filename=self.loading_img)
+        except:
+            return

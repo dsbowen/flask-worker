@@ -30,10 +30,12 @@ You can find the latest documentation at [https://dsbowen.github.io/flask-worker
 
 ## License
 
-Publications which use this software should include the following citations for Flask-Worker and its dependency, [SQLAlchemy-Mutable](https://pypi.org/project/sqlalchemy-mutable/).
+Publications which use this software should include the following citations for Flask-Worker and its dependencies, [SQLAlchemy-Mutable](https://pypi.org/project/sqlalchemy-mutable/) and [SQLAlchemy-MutableSoup](https://dsbowen.github.io/sqlalchemy-mutablesoup).
 
-Bowen, D.S. (2019). Flask-Worker [Compluter software]. [https://github.com/dsbowen/flask-worker](https://github.com/dsbowen/flask-worker)
+Bowen, D.S. (2019). Flask-Worker [Compluter software]. [https://github.com/dsbowen/flask-worker](https://github.com/dsbowen/flask-worker).
 
-Bowen, D.S. (2019). SQLAlchemy-Mutable [Computer software]. [https://github.com/dsbowen/sqlalchemy-mutable](https://github.com/dsbowen/sqlalchemy-mutable)
+Bowen, D.S. (2019). SQLAlchemy-Mutable [Computer software]. [https://github.com/dsbowen/sqlalchemy-mutable](https://github.com/dsbowen/sqlalchemy-mutable).
+
+Bowen, D.S. (2020). SQLAlchemy-MutableSoup [Computer software]. [https://dsbowen.github.io/sqlalchemy-mutablesoup](https://dsbowen.github.io/sqlalchemy-mutablesoup).
 
 This project is licensed under the MIT License [LICENSE](https://github.com/dsbowen/flask-worker/blob/master/LICENSE).
