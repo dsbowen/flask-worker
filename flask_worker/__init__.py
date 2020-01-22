@@ -20,7 +20,8 @@ default_settings = {
     'app_import': 'app.app',
     'connection': None,
     'db': None,
-    'loading_img': 'worker_loading.gif',
+    'loading_img_blueprint': None,
+    'loading_img_filename': 'worker_loading.gif',
     'socketio': None,
     'template': 'worker/worker_loading.html',
 }
@@ -80,6 +81,9 @@ class Manager():
     @property
     def loading_img_src(self):
         try:
-            return url_for('static', filename=self.loading_img)
+            bp = self.loading_img_blueprint
+            static = bp + '.static' if bp else 'static'
+            print(url_for(static, filename=self.loading_img_filename))
+            return url_for(static, filename=self.loading_img_filename)
         except:
             return
