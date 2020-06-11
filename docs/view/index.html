@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>View functions - Flask-Worker</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  <link href="../css/extra.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "View functions";
+    var mkdocs_page_input_path = "view.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Flask-Worker</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Tutorial</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../factory/">Factory</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../employer_worker/">Employers and workers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../img/">Loading image</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">View functions</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#basic-use">Basic use</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resetting-a-worker">Resetting a Worker</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#callback-routes">Callback routes</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../run/">Running the app</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../router/">Routers</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">API</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../manager/">Manager</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../worker_mixin/">Workers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../router_mixin/">Routers</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Flask-Worker</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Tutorial &raquo;</li>
+        
+      
+    
+    <li>View functions</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/dsbowen/flask-worker/edit/master/docs_md/view.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="view-functions">View functions</h1>
+<p>Now we can use the Employer and Worker in our view functions. </p>
+<h2 id="setup">Setup</h2>
+<p>By default, the <code>Manager</code> expects the Flask application to be an object named <code>app</code> in a file in the root directory called <code>app.py</code>. (You can change this by setting the Manager's <code>app_import</code> attribute). For the tutorial, we'll stick with the default. Our folder looks like:</p>
+<pre><code>static/
+    worker_loading.gif
+app.py
+factory.py
+models.py
+</code></pre>
+
+<p>All of the code in this part of the tutorial goes in the <code>app.py</code> file.</p>
+<pre><code class="python">from factory import create_app, db, socketio
+from models import Employer, get_model
+
+app = create_app()
+
+@app.before_first_request
+def before_first_request():
+    db.create_all()
+
+# VIEW FUNCTIONS GO HERE
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+</code></pre>
+
+<h2 id="basic-use">Basic use</h2>
+<p>This is a basic example in which the Employer uses its Worker to execute its complex task.</p>
+<p>The Worker only sends the Employer's complex task to the Redis Queue once, regardless of how many times the client requests this route. Until the Worker finishes its job, it returns a loading page. The result is cached once the Worker finishes its job, so that future calls to this route will not re-run the complex task.</p>
+<pre><code class="python">@app.route('/')
+@app.route('/index')
+def basic():
+    print('Request for /index')
+    employer = get_model(Employer, 'index')
+    worker = employer.worker
+    if not worker.job_finished:
+        return worker()
+    return 'Complex task finished.'
+</code></pre>
+
+<p>We are now ready to <a href="../run/">run our app</a>. </p>
+<h2 id="resetting-a-worker">Resetting a Worker</h2>
+<p>In this example, we reset the Worker after it has finished its job. This means that future calls to this route <em>will</em> re-run the complex task.</p>
+<pre><code class="python">@app.route('/reset')
+def with_reset():
+    print('Request for /reset')
+    employer = get_model(Employer, 'reset')
+    worker = employer.worker
+    if not worker.job_finished:
+        return worker()
+    worker.reset()
+    db.session.commit()
+    return 'Complex task finished. Reload the page to execute the task again.'
+</code></pre>
+
+<h2 id="callback-routes">Callback routes</h2>
+<p>This example demonstrates how to use a Worker's <code>callback</code> function. By default, when a Worker finishes its job, it issues another call to the current view function. Set the worker's <code>callback</code> attribute to the name of another view function to redirect the client after the Worker finishes its job.</p>
+<pre><code class="python">@app.route('/callback')
+def with_callback():
+    print('Request for /callback')
+    employer = get_model(Employer, 'callback')
+    worker = employer.worker
+    worker.callback = 'callback_route'
+    return worker()
+
+@app.route('/callback_route')
+def callback_route():
+    print('Request for /callback_route')
+    employer = get_model(Employer, 'callback')
+    worker = employer.worker
+    if not worker.job_finished:
+        return worker()
+    worker.reset()
+    db.session.commit()
+    return 'This is the callback route.'
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../run/" class="btn btn-neutral float-right" title="Running the app">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../img/" class="btn btn-neutral" title="Loading image"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/dsbowen/flask-worker/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../img/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../run/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

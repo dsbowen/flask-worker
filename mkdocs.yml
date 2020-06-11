@@ -1,0 +1,21 @@
+site_name: Flask-Worker
+docs_dir: docs_md
+site_dir: docs
+repo_url: https://github.com/dsbowen/flask-worker/
+edit_uri: edit/master/docs_md
+nav:
+  - Home: index.md
+  - Tutorial:
+    - Factory: factory.md
+    - Employers and workers: employer_worker.md
+    - Loading image: img.md
+    - View functions: view.md
+    - Running the app: run.md
+    - Routers: router.md
+  - API:
+    - Manager: manager.md
+    - Workers: worker_mixin.md
+    - Routers: router_mixin.md
+theme: readthedocs
+extra_css:
+  - css/extra.css

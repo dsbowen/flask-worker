@@ -1,12 +1,14 @@
-"""Application factory
+# Application factory
 
-Set up the application factory with:
+Flask-Worker requires a Flask application with three extensions:
 
-1 A Flask-SQLAlchemy database 
-2 Flask-SocketIO socketio
-3 A Flask-Worker Manager
-"""
+1. A [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/en/2.x/) database
+2. A [Flask-SocketIO](https://flask-socketio.readthedocs.io/en/latest/) socket
+3. A Flask-Worker manager
 
+The cleanest design uses an [application factory](https://flask.palletsprojects.com/en/1.1.x/patterns/appfactories/). We'll store this in a file called `factory.py`.
+
+```python
 from flask_worker import Manager
 
 from flask import Flask
@@ -37,3 +39,4 @@ def create_app():
     # initialize the manager with the application
     manager.init_app(app)
     return app
+```

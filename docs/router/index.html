@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Routers - Flask-Worker</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  <link href="../css/extra.css" rel="stylesheet" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Routers";
+    var mkdocs_page_input_path = "router.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Flask-Worker</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Tutorial</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../factory/">Factory</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../employer_worker/">Employers and workers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../img/">Loading image</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../view/">View functions</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../run/">Running the app</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Routers</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-problem">The problem</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-solution">The solution</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resetting-a-router">Resetting a router</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">API</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../manager/">Manager</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../worker_mixin/">Workers</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../router_mixin/">Routers</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Flask-Worker</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Tutorial &raquo;</li>
+        
+      
+    
+    <li>Routers</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/dsbowen/flask-worker/edit/master/docs_md/router.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="routers">Routers</h1>
+<h2 id="the-problem">The problem</h2>
+<p>Suppose we want a view function to execute a series of function calls. During these function calls, the Employer's complex task is executed. Our first pass might be to add something like the following in <code>app.py</code>.</p>
+<pre><code class="python">@app.route('/no-router')
+def no_router():
+    print('Request for /no-router')
+    return func1('hello world')
+
+def func1(hello_world):
+    print(hello_world)
+    return func2('hello moon')
+
+def func2(hello_moon):
+    print(hello_moon)
+    employer = get_model(Employer, 'no-router')
+    employer.complex_task(seconds=5)
+    return func3('hello star')
+
+def func3(hello_star):
+    print(hello_star)
+    db.session.commit()
+    return 'Function calls finished.'
+</code></pre>
+
+<p>The problem is that the entire series of function calls executes every time this view function is called.</p>
+<p>Ideally, we want to 'pause' the series of function calls while the complex task is executing. Once the worker has finished its job, we want to pick up where we left off.</p>
+<h2 id="the-solution">The solution</h2>
+<p>A Router solves this problem by managing a series of function calls initiated by a view function.</p>
+<p>The Router tracks function calls and their arguments. It does this by 'bookmarking' its methods with the <code>@set_route</code> decorator. It also has a dedicated method for using a Worker to run an Employer's complex task.</p>
+<p>We'll put the following code in a <code>router_models.py</code> file. Our folder looks like:</p>
+<pre><code>static/
+    worker_loading.gif
+app.py
+factory.py
+models.py
+router_models.py
+</code></pre>
+
+<pre><code class="python">from factory import db
+from models import Employer, get_model
+
+from flask_worker import RouterMixin, set_route
+
+
+# create a Router class with the router mixin.
+class Router(RouterMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        # set `current_route` on initialization
+        self.current_route = 'func1'
+        self.args = ['hello world']
+        super().__init__()
+
+    def func1(self, hello_world):
+        print(hello_world)
+        return self.func2('hello moon')
+
+    # 'bookmark' functions with the `@set_route` decorator
+    @set_route
+    def func2(self, hello_moon):
+        print(hello_moon)
+        employer = get_model(Employer, 'basic_routing')
+        worker = employer.worker
+        # run the Employer's complex task with a Worker
+        return self.run_worker(worker, self.func3, 'hello star')
+
+    @set_route
+    def func3(self, hello_star):
+        print(hello_star)
+        return 'Function calls finished.'
+</code></pre>
+
+<p>We'll also create a view function for the Router in <code>app.py</code>.</p>
+<pre><code class="python">from router_models import Router
+
+@app.route('/router')
+def basic_routing():
+    print('Request for /router')
+    router = get_model(Router, 'router')
+    return router.route()
+</code></pre>
+
+<h2 id="resetting-a-router">Resetting a router</h2>
+<p>In the previous example, we bookmarked the final function call. This means that any future calls to this Router will bypass the series of function calls, going straight to the final function call. This is sometimes, but not always, desirable behavior.</p>
+<p>This example resets the Router. Future calls to this Router will re-execute the entire series of function calls.</p>
+<p>Add the following to <code>router_models.py</code>.</p>
+<pre><code class="python">class RouterWithReset(RouterMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        self.reset()
+        super().__init__()
+
+    def reset(self):
+        self.current_route = 'func1'
+        self.args, self.kwargs = ['hello world'], {}
+        employer = get_model(Employer, 'routing_with_reset')
+        employer.worker.reset()
+
+    def func1(self, hello_world):
+        print(hello_world)
+        return self.func2('hello moon')
+
+    @set_route
+    def func2(self, hello_moon):
+        print(hello_moon)
+        employer = get_model(Employer, 'routing_with_reset')
+        worker = employer.worker
+        return self.run_worker(worker, self.func3, 'hello star')
+
+    def func3(self, hello_star):
+        print(hello_star)
+        self.reset()
+        return '''
+            Function calls finished. Reload the page to execute the 
+            function calls again.
+        '''
+</code></pre>
+
+<p>Add the following to <code>app.py</code>.</p>
+<pre><code class="python">from router_models import RouterWithReset
+
+@app.route('/router-reset')
+def routing_with_reset():
+    print('Request for /router-reset')
+    router = get_model(RouterWithReset, 'router_reset')
+    return router.route()
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../manager/" class="btn btn-neutral float-right" title="Manager">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../run/" class="btn btn-neutral" title="Running the app"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/dsbowen/flask-worker/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../run/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../manager/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

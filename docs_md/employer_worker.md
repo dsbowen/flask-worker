@@ -1,19 +1,21 @@
-"""Database models
+# Employers and workers
 
-This file defines Employer and Worker models.
+Flask-Worker uses what I call an 'Employer-Worker' model. An Employer is a class which needs to execute a complex (i.e. long-running) task before a view function returns a page to the client. A Worker executes the Employer's complex task by sending it to a Redis queue. While the client is waiting for the complex task to finish, the Worker sends the client a loading page.
 
-An Employer is a model with a complex task which must be run before a page 
-loads. It employs a Worker to execute its complex task in the background. 
-While working, the Worker sends the client a loading page.
-"""
+We'll create the Employer and Worker models in a file called `models.py`. Our folder now looks like:
 
+```
+factory.py
+models.py
+```
+
+```python
 from factory import db
 
 from flask_worker import WorkerMixin
 
 
 class Employer(db.Model):
-    """Employer model"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
@@ -36,21 +38,20 @@ class Employer(db.Model):
         print('Complex task finished')
 
 
-# create a Worker model with the worker mixin
 class Worker(WorkerMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'))
+```
 
+We'll also define a convenience method at the bottom of this file for database querying. This function returns a model of the type `model_class` with the specified `name`. If this model does not yet exist, this function creates it.
 
+```python
+...
 def get_model(model_class, name):
-    """Convenience method for database querying
-
-    This function returns a model of the type model_class with the specified 
-    name. If this model does not yet exist, this function creates it.
-    """
     model = model_class.query.filter_by(name=name).first()
     if not model:
         model = model_class(name=name)
         db.session.add(model)
         db.session.flush([model])
     return model
+```

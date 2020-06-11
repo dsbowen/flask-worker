@@ -1,20 +1,10 @@
-"""Flask-Worker
-
-Flask-Worker simplifies interaction with a Redis Queue for executing 
-long-running methods.
-
-This file defines a Manager, which assists in managing workers. The manager 
-tracks an application import path, a redis connection, the application 
-database, and the web socket. These tools will be invoked by workers.
-"""
+"""# Manager"""
 
 from flask_worker.router_mixin import RouterMixin, set_route
 from flask_worker.worker_mixin import WorkerMixin
 
 from flask import Blueprint, current_app, request, url_for
 import rq
-
-from copy import copy
 
 default_settings = {
     'app_import': 'app.app',
@@ -28,14 +18,80 @@ default_settings = {
 
 
 class Manager():
+    """
+    Flask extension which manages workers. The manager tracks an application 
+    import path, a redis connection, the application database, and the web 
+    socket. These tools will be invoked by workers.
+
+    Parameters
+    ----------
+    app : flask.app.Flask or None, default=None
+        Flask application for whose workers the manager is responsible. If the 
+        app is passed to the contructor, the manager will be initialized with 
+        the application. Otherwise, you must perform the initialization later 
+        by calling `init_app`.
+
+    \*\*kwargs :
+        You can set the manager's attributes by passing them as keyword 
+        arguments.    
+
+    Attributes
+    ----------
+    app_import : str, default='app.app'
+        Pythonic import path for the Flask application. e.g. if your 
+        application object is created in a file `path/to/app.py` and named 
+        `my_app`, set the `app_import` to `path.to.app.my_app`.
+
+    connection : redis.client.Redis
+        Redis connection for the workers. If not explicitly set, the manager 
+        will set the connection attribute to the app's `redis` attribute. In 
+        this case, the app must have a redis connection attribute named `redis` 
+        when the manager is initialized with the application.
+
+    db : flask_sqlalchemy.SQLAlchemy
+       Database for the flask application.
+
+    loading_img_blueprint : str or None, default=None
+        Name of the blueprint to which the loading image belongs. If `None`, 
+        the loading image is assumed to be in the app's `static` directory.
+
+    loading_img_filename : str, default='worker_loading.gif'
+        Name of the loading image file. This should be in the app's `static` 
+        directory or a blueprint's `static` directory.
+
+    loadering_img_src : str
+        Loading image source path, derived from `loading_img_blueprint` and 
+        `loading_img_filename`.
+
+    socketio : flask_socketio.SocketIO or None, default=None
+        Socket object through which workers will emit job progress messages. 
+        While this argument is not required on initialization, it must be set 
+        before the app is run.
+
+    template : str, default='worker/worker_loading.html'
+        Name of the html template file for the loading page. Flask-Worker 
+        provides a default loading template.
+    """
     def __init__(self, app=None, **kwargs):
-        settings = copy(default_settings)
+        settings = default_settings.copy()
         settings.update(kwargs)
         [setattr(self, key, val) for key, val in settings.items()]
         if app is not None:
             self._init_app(app)
         
     def init_app(self, app, **kwargs):
+        """
+        Initialize the manager with the application.
+
+        Parameters
+        ----------
+        app : flask.app.Flask
+            Flask application for whose workers the manager is responsible.
+
+        \*\*kwargs :
+            You can set the manager's attributes by passing them as keyword 
+            arguments.
+        """
         [setattr(self, key, val) for key, val in kwargs.items()]
         self._init_app(app)
 
@@ -83,7 +139,6 @@ class Manager():
         try:
             bp = self.loading_img_blueprint
             static = bp + '.static' if bp else 'static'
-            print(url_for(static, filename=self.loading_img_filename))
             return url_for(static, filename=self.loading_img_filename)
         except:
-            return
+            pass
