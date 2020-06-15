@@ -16,5 +16,6 @@ compile_md(soup, compiler='sklearn', outfile='docs_md/worker_mixin.md')
 
 path = 'flask_worker/router_mixin.py'
 soup = PySoup(path=path, parser='sklearn', src_href=src_href)
+soup.rm_properties()
 soup.import_path = 'flask_worker'
 compile_md(soup, compiler='sklearn', outfile='docs_md/router_mixin.md')

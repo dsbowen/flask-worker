@@ -9,7 +9,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Worker - Flask-Worker</title>
+  <title>Workers - Flask-Worker</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
   <link rel="stylesheet" href="../css/theme.css" />
@@ -19,7 +19,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Worker";
+    var mkdocs_page_name = "Workers";
     var mkdocs_page_input_path = "worker.md";
     var mkdocs_page_url = null;
   </script>
@@ -53,10 +53,12 @@
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Tutorial</span></p>
-                <ul>
+                <ul class="current">
                     <li class="toctree-l1"><a class="reference internal" href="../factory/">Factory</a>
                     </li>
-                    <li class="toctree-l1"><a class="reference internal" href="../employer_worker/">Employers and workers</a>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Workers</a>
+    <ul class="current">
+    </ul>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../img/">Loading image</a>
                     </li>
@@ -96,8 +98,12 @@
     <li><a href="..">Docs</a> &raquo;</li>
     
       
+        
+          <li>Tutorial &raquo;</li>
+        
+      
     
-    <li>Worker</li>
+    <li>Workers</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/dsbowen/flask-worker/edit/master/docs_md/worker.md"
@@ -111,187 +117,58 @@
           <div role="main">
             <div class="section">
               
-                <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+                <h1 id="workers">Workers</h1>
+<p>A Worker executes a complex task by sending it to a Redis queue. While the client is waiting for the complex task to finish, the Worker sends the client a loading page.</p>
+<p>We'll create the Worker model in a file called <code>models.py</code>. Our folder now looks like:</p>
+<pre><code>factory.py
+models.py
+</code></pre>
 
-<p><link rel="stylesheet" href="https://assets.readthedocs.org/static/css/readthedocs-doc-embed.css" type="text/css" /></p>
-<style>
-    a.src-href {
-        float: right;
-    }
-    p.attr {
-        margin-top: 0.5em;
-        margin-left: 1em;
-    }
-    p.func-header {
-        background-color: gainsboro;
-        border-radius: 0.1em;
-        padding: 0.5em;
-        padding-left: 1em;
-    }
-    table.field-table {
-        border-radius: 0.1em
-    }
-</style>
+<pre><code class="python">from factory import db
 
-<h1 id="workers">Workers</h1>
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
+from flask_worker import WorkerMixin
 
-    </tbody>
-</table>
+def complex_task(seconds):
+    import time
+    print('Complex task started')
+    for i in range(seconds):
+        print('Progress: {}%'.format(100.0*i/seconds))
+        time.sleep(1)
+    print('Progress: 100.0%')
+    print('Complex task finished')
+    return 'Hello, World!'
 
-<h2 id="flask_workerworkermixin">flask_worker.<strong>WorkerMixin</strong></h2>
-<p class="func-header">
-    <i>class</i> flask_worker.<b>WorkerMixin</b>(<i>template=None, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L12">[source]</a>
-</p>
 
-<p>The worker executes a complex task for its <code>employer</code> using a Redis queue.</p>
-<p>When called, it enqueues a job (one of its employer's methods specified by
-<code>method_name</code>). The worker returns a loading page, specified by its
-<code>loading_page</code>.</p>
-<p>When a Redis worker grabs the enqueued job, it executes it with the
-worker's <code>args</code> and <code>kwargs</code>. After execution, the worker's script
-replaces the client's window location with a call to its <code>callback</code> view
-function.</p>
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
-        <tr class="field">
-    <th class="field-name"><b>Parameters:</b></td>
-    <td class="field-body" width="100%"><b>template : <i>str or None, default=None</i></b>
-<p class="attr">
-    Name of the html template file for the worker's loading page. If <code>None</code>, the worker will use the manager's loading page template.
-</p>
-<b>**kwargs : <i></i></b>
-<p class="attr">
-    You can set the worker's attributes by passing them as keyword arguments.
-</p></td>
-</tr>
-<tr class="field">
-    <th class="field-name"><b>Attributes:</b></td>
-    <td class="field-body" width="100%"><b>manager : <i>flask_worker.Manager</i></b>
-<p class="attr">
-    The worker's manager.
-</p>
-<b>method_name : <i>str</i></b>
-<p class="attr">
-    Name of the employer's method which the worker will execute.
-</p>
-<b>args : <i>list, default=[]</i></b>
-<p class="attr">
-    Arguments which will be passed to the executed method.
-</p>
-<b>kwargs : <i>dict, default={}</i></b>
-<p class="attr">
-    Keyword arguments which will be passed to the executed method.
-</p>
-<b>callback : <i>str or None, default=None</i></b>
-<p class="attr">
-    Name of the view function to which the client will navigate once the worker has finished its job. If <code>None</code>, the current view function is re-called.
-</p>
-<b>job_finished : <i>bool, default=False</i></b>
-<p class="attr">
-    Indicates that the worker has finished its job.
-</p>
-<b>job_in_progress : <i>bool, default=False</i></b>
-<p class="attr">
-    Indicates that the worker has a job in progress.
-</p>
-<b>job_id : <i>str</i></b>
-<p class="attr">
-    Identifier for the worker's job.
-</p>
-<b>loading_page : <i>sqlalchemy_mutablesoup.MutableSoup</i></b>
-<p class="attr">
-    Loading page which will be displayed to the client while the worker performs its job.
-</p>
-<b>loading_img : <i>bs4.Tag</i></b>
-<p class="attr">
-    <code>&lt;img&gt;</code> tag for the loading image.
-</p>
-<b>loading_img_src : <i>str</i></b>
-<p class="attr">
-    Source of the loading image.
-</p></td>
-</tr>
-    </tbody>
-</table>
+# create a Worker model with the worker mixin
+class Worker(WorkerMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
 
-<h4 id="methods">Methods</h4>
-<p class="func-header">
-    <i></i> <b>set_method</b>(<i>self, method_name, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L106">[source]</a>
-</p>
+    def __init__(self, name):
+        self.name = name
+        # set the worker's complex task along with args and kwargs
+        self.set(complex_task, seconds=5)
+        super().__init__()
+</code></pre>
 
-<p>Set the worker's <code>method_name</code> attribute.</p>
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
-        <tr class="field">
-    <th class="field-name"><b>Parameters:</b></td>
-    <td class="field-body" width="100%"><b>method_name : <i>str</i></b>
-<p class="attr">
-    Name of the employer's method which the worker executes.
-</p>
-<b>*args, **kwargs : <i></i></b>
-<p class="attr">
-    Arguments and keyword arguments for the method.
-</p></td>
-</tr>
-<tr class="field">
-    <th class="field-name"><b>Returns:</b></td>
-    <td class="field-body" width="100%"><b>self : <i>flask_worker.WorkerMixin</i></b>
-<p class="attr">
-
-</p></td>
-</tr>
-    </tbody>
-</table>
-
-<p class="func-header">
-    <i></i> <b>reset</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L126">[source]</a>
-</p>
-
-<p>Clears the <code>job_finished</code>, <code>job_in_progress</code>, and <code>job_id</code> attributes.</p>
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
-        <tr class="field">
-    <th class="field-name"><b>Returns:</b></td>
-    <td class="field-body" width="100%"><b>self : <i>flask_worker.WorkerMixin</i></b>
-<p class="attr">
-
-</p></td>
-</tr>
-    </tbody>
-</table>
-
-<p class="func-header">
-    <i></i> <b>__call__</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L138">[source]</a>
-</p>
-
-<p>Enqueue the employer's job for execution if it is not enqueued already.</p>
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
-        <tr class="field">
-    <th class="field-name"><b>Returns:</b></td>
-    <td class="field-body" width="100%"><b>loading_page : <i>str (html)</i></b>
-<p class="attr">
-    The client's loading page.
-</p></td>
-</tr>
-    </tbody>
-</table>
+<p>We'll also define a convenience method at the bottom of this file for database querying. This function returns a model of the type <code>class_</code> with the specified <code>name</code>. If this model does not yet exist, this function creates it.</p>
+<pre><code class="python">...
+def get_model(class_, name):
+    return class_.query.filter_by(name=name).first() or class_(name)
+</code></pre>
               
             </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../img/" class="btn btn-neutral float-right" title="Loading image">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../factory/" class="btn btn-neutral" title="Factory"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -317,6 +194,10 @@ function.</p>
           <a href="https://github.com/dsbowen/flask-worker/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
+        <span><a href="../factory/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../img/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

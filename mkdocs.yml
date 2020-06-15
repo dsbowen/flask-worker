@@ -7,7 +7,7 @@ nav:
   - Home: index.md
   - Tutorial:
     - Factory: factory.md
-    - Employers and workers: employer_worker.md
+    - Workers: worker.md
     - Loading image: img.md
     - View functions: view.md
     - Running the app: run.md

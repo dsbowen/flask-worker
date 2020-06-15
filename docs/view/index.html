@@ -56,7 +56,7 @@
                 <ul class="current">
                     <li class="toctree-l1"><a class="reference internal" href="../factory/">Factory</a>
                     </li>
-                    <li class="toctree-l1"><a class="reference internal" href="../employer_worker/">Employers and workers</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../worker/">Workers</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../img/">Loading image</a>
                     </li>
@@ -126,7 +126,7 @@
             <div class="section">
               
                 <h1 id="view-functions">View functions</h1>
-<p>Now we can use the Employer and Worker in our view functions. </p>
+<p>Now we can use the Worker in our view functions. </p>
 <h2 id="setup">Setup</h2>
 <p>By default, the <code>Manager</code> expects the Flask application to be an object named <code>app</code> in a file in the root directory called <code>app.py</code>. (You can change this by setting the Manager's <code>app_import</code> attribute). For the tutorial, we'll stick with the default. Our folder looks like:</p>
 <pre><code>static/
@@ -138,10 +138,11 @@ models.py
 
 <p>All of the code in this part of the tutorial goes in the <code>app.py</code> file.</p>
 <pre><code class="python">from factory import create_app, db, socketio
-from models import Employer, get_model
+from models import Worker, get_model
 
 app = create_app()
 
+# create database before first app request
 @app.before_first_request
 def before_first_request():
     db.create_all()
@@ -153,17 +154,13 @@ if __name__ == '__main__':
 </code></pre>
 
 <h2 id="basic-use">Basic use</h2>
-<p>This is a basic example in which the Employer uses its Worker to execute its complex task.</p>
-<p>The Worker only sends the Employer's complex task to the Redis Queue once, regardless of how many times the client requests this route. Until the Worker finishes its job, it returns a loading page. The result is cached once the Worker finishes its job, so that future calls to this route will not re-run the complex task.</p>
+<p>This is a basic example in which the Worker executes its complex task.</p>
+<p>The Worker only sends its complex task to the Redis Queue once, regardless of how many times the client requests this route. Until the Worker finishes its job, it returns a loading page. The result is cached once the Worker finishes its job, so that future calls to this route will not re-run the complex task.</p>
 <pre><code class="python">@app.route('/')
 @app.route('/index')
-def basic():
-    print('Request for /index')
-    employer = get_model(Employer, 'index')
-    worker = employer.worker
-    if not worker.job_finished:
-        return worker()
-    return 'Complex task finished.'
+def index():
+    worker = get_model(Worker, 'index')
+    return worker.result if worker.job_finished else worker()
 </code></pre>
 
 <p>We are now ready to <a href="../run/">run our app</a>. </p>
@@ -171,36 +168,28 @@ def basic():
 <p>In this example, we reset the Worker after it has finished its job. This means that future calls to this route <em>will</em> re-run the complex task.</p>
 <pre><code class="python">@app.route('/reset')
 def with_reset():
-    print('Request for /reset')
-    employer = get_model(Employer, 'reset')
-    worker = employer.worker
+    worker = get_model(Worker, 'reset')
     if not worker.job_finished:
         return worker()
     worker.reset()
     db.session.commit()
-    return 'Complex task finished. Reload the page to execute the task again.'
+    return worker.result
 </code></pre>
 
 <h2 id="callback-routes">Callback routes</h2>
 <p>This example demonstrates how to use a Worker's <code>callback</code> function. By default, when a Worker finishes its job, it issues another call to the current view function. Set the worker's <code>callback</code> attribute to the name of another view function to redirect the client after the Worker finishes its job.</p>
 <pre><code class="python">@app.route('/callback')
 def with_callback():
-    print('Request for /callback')
-    employer = get_model(Employer, 'callback')
-    worker = employer.worker
+    worker = get_model(Worker, 'callback')
     worker.callback = 'callback_route'
+    if worker.job_finished:
+        worker.reset()
     return worker()
 
 @app.route('/callback_route')
 def callback_route():
-    print('Request for /callback_route')
-    employer = get_model(Employer, 'callback')
-    worker = employer.worker
-    if not worker.job_finished:
-        return worker()
-    worker.reset()
-    db.session.commit()
-    return 'This is the callback route.'
+    worker = get_model(Worker, 'callback')
+    return worker.result if worker.job_finished else worker()
 </code></pre>
               
             </div>

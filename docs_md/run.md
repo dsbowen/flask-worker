@@ -54,4 +54,4 @@ Progress: 100.0%
 Complex task finished
 ```
 
-While the complex task is executing, you'll see the loading gif in your browser. After the worker has finished, the page will reload with a 'Complex task finished' message.
+While the complex task is executing, you'll see the loading gif in your browser. After the worker has finished, the page will reload with a 'Hello, World!' message.

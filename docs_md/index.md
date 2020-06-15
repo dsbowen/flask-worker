@@ -11,22 +11,34 @@ Suppose we have a view function which needs to execute a complex task before the
 ```python
 @app.route('/')
 def index():
-    complex_task()
-    return 'Complex task finished.'
+    return complex_task()
 ```
 
 Unfortunately, the view function executes the complex task every time it is called. To make matters worse, the client has no indication that the complex task is in progress. Each time the client tries to refresh the page, the complex task is queued up again.
 
-Flask-Worker solves this problem. After setup, we can achieve the desired behavior with.
+Flask-Worker solves this problem. We set up a Worker:
+
+```python
+class Worker(WorkerMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        self.set(complex_task)
+        super().__init__()
+```
+
+And call it in a view function:
 
 ```python
 @app.route('/')
 def index():
-    worker = Employer.query.first().worker
-    if not worker.job_finished:
-        return worker()
-    return 'Complex task finished'
+    worker = get_model(Worker, name='index')
+    return worker.result if worker.job_finished else worker()
 ```
+
+See the [tutorial](https://dsbowen.github.io/flask-worker/factory/) for a complete example.
 
 ## Installation
 
@@ -41,7 +53,7 @@ $ pip install flask-worker
   author = {Dillon Bowen},
   title = {Flask-Worker},
   url = {https://dsbowen.github.io/flask-worker/},
-  date = {2020-06-11},
+  date = {2020-06-15},
 }
 ```
 

@@ -34,12 +34,12 @@
 ##flask_worker.**set_route**
 
 <p class="func-header">
-    <i>def</i> flask_worker.<b>set_route</b>(<i>func</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L7">[source]</a>
+    <i>def</i> flask_worker.<b>set_route</b>(<i>func</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L9">[source]</a>
 </p>
 
 The `@set_route` decorator bookmarks the current function call.
-Specifically, it sets the Router's `current_route` to the name of the
-current function and stores the args and kwargs.
+Specifically, it sets the Router's `func` to the the current function and
+stores the args and kwargs.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />
@@ -54,16 +54,14 @@ current function and stores the args and kwargs.
 ##flask_worker.**RouterMixin**
 
 <p class="func-header">
-    <i>class</i> flask_worker.<b>RouterMixin</b>(<i>*args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L21">[source]</a>
+    <i>class</i> flask_worker.<b>RouterMixin</b>(<i>func, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L21">[source]</a>
 </p>
 
-Mixin for router models. A router manages a series of function calls initiated by a view function. Among this series of function calls is the employer's complex task.
+Mixin for Router models. A Router manages a series of function calls
+initiated by a view function. These function calls must be methods of the
+Router.
 
-Suppose a view function initiates a series of function calls which
-include running a Worker. A Router allows the series of function calls to
-'pause' while the Worker is running. Once the Worker finishes its job,
-the Router resumes the series of function calls without repeating earlier
-functions.
+Suppose a view function initiates a series of function calls which include calling a Router. The Router can 'bookmark' its methods; if this Router is called in the future, it will pick up its series of function calls at the bookmarked method.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />
@@ -71,24 +69,40 @@ functions.
     <tbody valign="top">
         <tr class="field">
     <th class="field-name"><b>Parameters:</b></td>
-    <td class="field-body" width="100%"><b>*args, **kwargs : <i></i></b>
+    <td class="field-body" width="100%"><b>func : <i>callable</i></b>
 <p class="attr">
-    Passed to <code>super().__init__</code>.
+    The function executed when the Router is called.
+</p>
+<b>*args, **kwargs : <i></i></b>
+<p class="attr">
+    Arguments and keyword arguments passed to <code>func</code>.
 </p></td>
 </tr>
 <tr class="field">
     <th class="field-name"><b>Attributes:</b></td>
-    <td class="field-body" width="100%"><b>current_route : <i>str</i></b>
+    <td class="field-body" width="100%"><b>func : <i>callable</i></b>
 <p class="attr">
-    Name of the current 'route'. A route is one of the router's methods.
+    Set from the <code>func</code> parameter.
 </p>
 <b>args : <i>list, default=[]</i></b>
 <p class="attr">
-    Arguments for the current route, set from the <code>*args</code> parameter.
+    Set from the <code>*args</code> parameter.
 </p>
 <b>kwargs : <i>dict, default={}</i></b>
 <p class="attr">
-    Keyword arguments for the current route, set from the <code>**kwargs</code> parameter.
+    Set from the <code>**kwargs</code> parameter.
+</p>
+<b>init_func : <i>callable</i></b>
+<p class="attr">
+    Set from the <code>func</code> parameter. <code>func</code> is reset to <code>init_func</code> when the Router's <code>reset</code> method is called.
+</p>
+<b>init_args : <i>list, default=[]</i></b>
+<p class="attr">
+    Set from the <code>*args</code> parameter. <code>args</code> is reset to <code>init_args</code> when the Router's <code>reset</code> method is called.
+</p>
+<b>init_kwargs : <i>dict, default={}</i></b>
+<p class="attr">
+    Similarly defined.
 </p></td>
 </tr>
     </tbody>
@@ -101,10 +115,10 @@ functions.
 
 
 <p class="func-header">
-    <i></i> <b>route</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L57">[source]</a>
+    <i></i> <b>__call__</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L75">[source]</a>
 </p>
 
-Route the request to the `current_route`.
+Calls `self.func`, passing in `self.args` and `self.kwargs`.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />
@@ -125,35 +139,21 @@ Route the request to the `current_route`.
 
 
 <p class="func-header">
-    <i></i> <b>run_worker</b>(<i>self, worker, next_route, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L72">[source]</a>
+    <i></i> <b>reset</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/router_mixin.py#L91">[source]</a>
 </p>
 
-Run a Worker, and return a call to the next route when finished.
+Reset `self.func`, `self.args`, and `self.kwargs` to their initial
+values.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />
     <col class="field-body" />
     <tbody valign="top">
         <tr class="field">
-    <th class="field-name"><b>Parameters:</b></td>
-    <td class="field-body" width="100%"><b>worker : <i>flask_worker.WorkerMixin</i></b>
-<p class="attr">
-    Worker whose job should be run.
-</p>
-<b>next_route : <i>callable</i></b>
-<p class="attr">
-    The route which should be run after the worker has finished its job.
-</p>
-<b>*args, **kwargs : <i></i></b>
-<p class="attr">
-    Arguments and keyword arguments passed to <code>next_route</code>.
-</p></td>
-</tr>
-<tr class="field">
     <th class="field-name"><b>Returns:</b></td>
-    <td class="field-body" width="100%"><b>page_html : <i>str</i></b>
+    <td class="field-body" width="100%"><b>self : <i>flask_worker.RouterMixin</i></b>
 <p class="attr">
-    Html of the page returned by the worker (if the job is not yet ]finished) or the next route function (after the job is finished).
+    
 </p></td>
 </tr>
     </tbody>

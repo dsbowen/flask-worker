@@ -1,5 +1,6 @@
 __pycache__/
 *.egg-info/
+build/
 dist/
 flask-worker-venv/
 data.db

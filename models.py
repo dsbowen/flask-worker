@@ -1,56 +1,63 @@
-"""Database models
-
-This file defines Employer and Worker models.
-
-An Employer is a model with a complex task which must be run before a page 
-loads. It employs a Worker to execute its complex task in the background. 
-While working, the Worker sends the client a loading page.
-"""
+"""Database models"""
 
 from factory import db
 
 from flask_worker import WorkerMixin
 
-
-class Employer(db.Model):
-    """Employer model"""
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-
-    # add a worker to the employer
-    # the worker must reference its employer with an `employer` attribute
-    worker = db.relationship('Worker', uselist=False, backref='employer')
-
-    def __init__(self, name):
-        self.name = name
-        # instantiate a worker
-        self.worker = Worker().set_method('complex_task', seconds=5)
-
-    def complex_task(self, seconds=5):
-        import time
-        print('Complex task started')
-        for i in range(seconds):
-            print('Progress: {}%'.format(100.0*i/seconds))
-            time.sleep(1)
-        print('Progress: 100.0%')
-        print('Complex task finished')
+def complex_task(seconds):
+    import time
+    print('Complex task started')
+    for i in range(seconds):
+        print('Progress: {}%'.format(100.0*i/seconds))
+        time.sleep(1)
+    print('Progress: 100.0%')
+    print('Complex task finished')
+    return 'Hello, World!'
 
 
 # create a Worker model with the worker mixin
 class Worker(WorkerMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    employer_id = db.Column(db.Integer, db.ForeignKey('employer.id'))
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        # set the worker's complex task along with args and kwargs
+        self.set(complex_task, seconds=5)
+        super().__init__()
 
 
-def get_model(model_class, name):
-    """Convenience method for database querying
+def get_model(class_, name):
+    return class_.query.filter_by(name=name).first() or class_(name)
 
-    This function returns a model of the type model_class with the specified 
-    name. If this model does not yet exist, this function creates it.
-    """
-    model = model_class.query.filter_by(name=name).first()
-    if not model:
-        model = model_class(name=name)
-        db.session.add(model)
-        db.session.flush([model])
-    return model
+
+from flask_worker import RouterMixin, set_route
+
+
+class Router(RouterMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        super().__init__(self.func1, 'hello world')
+
+    def func1(self, hello_world):
+        print(hello_world)
+        return self.func2('hello moon')
+
+    # 'bookmark' functions with the `@set_route` decorator
+    @set_route
+    def func2(self, hello_moon):
+        print(hello_moon)
+        worker = get_model(Worker, 'routing')
+        return self.func3('hello star') if worker.job_finished else worker()
+
+    @set_route
+    def func3(self, hello_star):
+        print(hello_star)
+        # optionally, reset the router
+        # you may also want to reset Workers which were called by the Router
+        self.reset()
+        get_model(Worker, 'routing').reset()
+        return 'Function calls finished.'

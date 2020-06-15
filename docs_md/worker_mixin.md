@@ -34,19 +34,16 @@
 ##flask_worker.**WorkerMixin**
 
 <p class="func-header">
-    <i>class</i> flask_worker.<b>WorkerMixin</b>(<i>template=None, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L12">[source]</a>
+    <i>class</i> flask_worker.<b>WorkerMixin</b>(<i>template=None, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L12">[source]</a>
 </p>
 
-The worker executes a complex task for its `employer` using a Redis queue.
+The worker executes a complex task using a Redis queue. When called, it
+enqueues a job and returns a loading page.
 
-When called, it enqueues a job (one of its employer's methods specified by
-`method_name`). The worker returns a loading page, specified by its
-`loading_page`.
-
-When a Redis worker grabs the enqueued job, it executes it with the
-worker's `args` and `kwargs`. After execution, the worker's script
-replaces the client's window location with a call to its `callback` view
-function.
+When a Redis worker grabs the enqueued job, it executes the worker's
+function, `func`, passing in the worker's `args` and `kwargs`. After
+execution, the worker's script replaces the client's window location with
+a call to its `callback` view function.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />
@@ -69,9 +66,9 @@ function.
 <p class="attr">
     The worker's manager.
 </p>
-<b>method_name : <i>str</i></b>
+<b>func : <i>callable</i></b>
 <p class="attr">
-    Name of the employer's method which the worker will execute.
+    Function which the worker will execute.
 </p>
 <b>args : <i>list, default=[]</i></b>
 <p class="attr">
@@ -108,6 +105,10 @@ function.
 <b>loading_img_src : <i>str</i></b>
 <p class="attr">
     Source of the loading image.
+</p>
+<b>result : <i></i></b>
+<p class="attr">
+    Output of the worker's function. This stores the result of the job the worker executed.
 </p></td>
 </tr>
     </tbody>
@@ -120,42 +121,7 @@ function.
 
 
 <p class="func-header">
-    <i></i> <b>set_method</b>(<i>self, method_name, *args, **kwargs</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L106">[source]</a>
-</p>
-
-Set the worker's `method_name` attribute.
-
-<table class="docutils field-list field-table" frame="void" rules="none">
-    <col class="field-name" />
-    <col class="field-body" />
-    <tbody valign="top">
-        <tr class="field">
-    <th class="field-name"><b>Parameters:</b></td>
-    <td class="field-body" width="100%"><b>method_name : <i>str</i></b>
-<p class="attr">
-    Name of the employer's method which the worker executes.
-</p>
-<b>*args, **kwargs : <i></i></b>
-<p class="attr">
-    Arguments and keyword arguments for the method.
-</p></td>
-</tr>
-<tr class="field">
-    <th class="field-name"><b>Returns:</b></td>
-    <td class="field-body" width="100%"><b>self : <i>flask_worker.WorkerMixin</i></b>
-<p class="attr">
-    
-</p></td>
-</tr>
-    </tbody>
-</table>
-
-
-
-
-
-<p class="func-header">
-    <i></i> <b>reset</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L126">[source]</a>
+    <i></i> <b>reset</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L105">[source]</a>
 </p>
 
 Clears the `job_finished`, `job_in_progress`, and `job_id` attributes.
@@ -179,10 +145,10 @@ Clears the `job_finished`, `job_in_progress`, and `job_id` attributes.
 
 
 <p class="func-header">
-    <i></i> <b>__call__</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L138">[source]</a>
+    <i></i> <b>__call__</b>(<i>self</i>) <a class="src-href" target="_blank" href="https://github.com/dsbowen/flask-worker/blob/master/flask_worker/worker_mixin.py#L117">[source]</a>
 </p>
 
-Enqueue the employer's job for execution if it is not enqueued already.
+Enqueue the worker's job for execution if it is not enqueued already.
 
 <table class="docutils field-list field-table" frame="void" rules="none">
     <col class="field-name" />

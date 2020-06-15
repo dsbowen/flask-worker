@@ -66,7 +66,7 @@
                 <ul>
                     <li class="toctree-l1"><a class="reference internal" href="factory/">Factory</a>
                     </li>
-                    <li class="toctree-l1"><a class="reference internal" href="employer_worker/">Employers and workers</a>
+                    <li class="toctree-l1"><a class="reference internal" href="worker/">Workers</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="img/">Loading image</a>
                     </li>
@@ -128,20 +128,29 @@
 <p>Suppose we have a view function which needs to execute a complex task before the client can view the page. What we want is for the complex task to run once, and for the view function to return a loading page while the complex task is running. Our first pass might be:</p>
 <pre><code class="python">@app.route('/')
 def index():
-    complex_task()
-    return 'Complex task finished.'
+    return complex_task()
 </code></pre>
 
 <p>Unfortunately, the view function executes the complex task every time it is called. To make matters worse, the client has no indication that the complex task is in progress. Each time the client tries to refresh the page, the complex task is queued up again.</p>
-<p>Flask-Worker solves this problem. After setup, we can achieve the desired behavior with.</p>
-<pre><code class="python">@app.route('/')
-def index():
-    worker = Employer.query.first().worker
-    if not worker.job_finished:
-        return worker()
-    return 'Complex task finished'
+<p>Flask-Worker solves this problem. We set up a Worker:</p>
+<pre><code class="python">class Worker(WorkerMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def __init__(self, name):
+        self.name = name
+        self.set(complex_task)
+        super().__init__()
 </code></pre>
 
+<p>And call it in a view function:</p>
+<pre><code class="python">@app.route('/')
+def index():
+    worker = get_model(Worker, name='index')
+    return worker.result if worker.job_finished else worker()
+</code></pre>
+
+<p>See the <a href="https://dsbowen.github.io/flask-worker/factory/">tutorial</a> for a complete example.</p>
 <h2 id="installation">Installation</h2>
 <pre><code>$ pip install flask-worker
 </code></pre>
@@ -151,7 +160,7 @@ def index():
   author = {Dillon Bowen},
   title = {Flask-Worker},
   url = {https://dsbowen.github.io/flask-worker/},
-  date = {2020-06-11},
+  date = {2020-06-15},
 }
 </code></pre>
 
@@ -213,5 +222,5 @@ def index():
 
 <!--
 MkDocs version : 1.1.1
-Build Date UTC : 2020-06-11 22:50:44.241370+00:00
+Build Date UTC : 2020-06-15 20:00:38.355501+00:00
 -->

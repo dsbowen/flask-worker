@@ -1,6 +1,6 @@
 # View functions
 
-Now we can use the Employer and Worker in our view functions. 
+Now we can use the Worker in our view functions. 
 
 ## Setup
 
@@ -18,10 +18,11 @@ All of the code in this part of the tutorial goes in the `app.py` file.
 
 ```python
 from factory import create_app, db, socketio
-from models import Employer, get_model
+from models import Worker, get_model
 
 app = create_app()
 
+# create database before first app request
 @app.before_first_request
 def before_first_request():
     db.create_all()
@@ -34,20 +35,16 @@ if __name__ == '__main__':
 
 ## Basic use
 
-This is a basic example in which the Employer uses its Worker to execute its complex task.
+This is a basic example in which the Worker executes its complex task.
 
-The Worker only sends the Employer's complex task to the Redis Queue once, regardless of how many times the client requests this route. Until the Worker finishes its job, it returns a loading page. The result is cached once the Worker finishes its job, so that future calls to this route will not re-run the complex task.
+The Worker only sends its complex task to the Redis Queue once, regardless of how many times the client requests this route. Until the Worker finishes its job, it returns a loading page. The result is cached once the Worker finishes its job, so that future calls to this route will not re-run the complex task.
 
 ```python
 @app.route('/')
 @app.route('/index')
-def basic():
-    print('Request for /index')
-    employer = get_model(Employer, 'index')
-    worker = employer.worker
-    if not worker.job_finished:
-        return worker()
-    return 'Complex task finished.'
+def index():
+    worker = get_model(Worker, 'index')
+    return worker.result if worker.job_finished else worker()
 ```
 
 We are now ready to [run our app](run.md). 
@@ -59,14 +56,12 @@ In this example, we reset the Worker after it has finished its job. This means t
 ```python
 @app.route('/reset')
 def with_reset():
-    print('Request for /reset')
-    employer = get_model(Employer, 'reset')
-    worker = employer.worker
+    worker = get_model(Worker, 'reset')
     if not worker.job_finished:
         return worker()
     worker.reset()
     db.session.commit()
-    return 'Complex task finished. Reload the page to execute the task again.'
+    return worker.result
 ```
 
 ## Callback routes
@@ -76,20 +71,14 @@ This example demonstrates how to use a Worker's `callback` function. By default,
 ```python
 @app.route('/callback')
 def with_callback():
-    print('Request for /callback')
-    employer = get_model(Employer, 'callback')
-    worker = employer.worker
+    worker = get_model(Worker, 'callback')
     worker.callback = 'callback_route'
+    if worker.job_finished:
+        worker.reset()
     return worker()
 
 @app.route('/callback_route')
 def callback_route():
-    print('Request for /callback_route')
-    employer = get_model(Employer, 'callback')
-    worker = employer.worker
-    if not worker.job_finished:
-        return worker()
-    worker.reset()
-    db.session.commit()
-    return 'This is the callback route.'
+    worker = get_model(Worker, 'callback')
+    return worker.result if worker.job_finished else worker()
 ```

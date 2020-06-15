@@ -1,93 +1,101 @@
 """# Routers"""
 
 from flask import current_app
-from sqlalchemy import Column, String
+from sqlalchemy import Column, PickleType, String
+from sqlalchemy.inspection import inspect
+from sqlalchemy_function import FunctionMixin
 from sqlalchemy_mutable import MutableListType, MutableDictType
 
 def set_route(func):
     """
     The `@set_route` decorator bookmarks the current function call. 
-    Specifically, it sets the Router's `current_route` to the name of the 
-    current function and stores the args and kwargs.
+    Specifically, it sets the Router's `func` to the the current function and 
+    stores the args and kwargs.
     """
     def with_route_setting(router, *args, **kwargs):
-        router.current_route = func.__name__
-        router.args = list(args)
-        router.kwargs = kwargs
+        router.set(func, *args, **kwargs)
         return func(router, *args, **kwargs)
     return with_route_setting
 
 
-class RouterMixin():
+class RouterMixin(FunctionMixin):
     """
-    Mixin for router models. A router manages a series of function calls initiated by a view function. Among this series of function calls is the employer's complex task.
+    Mixin for Router models. A Router manages a series of function calls 
+    initiated by a view function. These function calls must be methods of the 
+    Router.
 
-    Suppose a view function initiates a series of function calls which 
-    include running a Worker. A Router allows the series of function calls to 
-    'pause' while the Worker is running. Once the Worker finishes its job, 
-    the Router resumes the series of function calls without repeating earlier 
-    functions.
+    Suppose a view function initiates a series of function calls which include calling a Router. The Router can 'bookmark' its methods; if this Router is called in the future, it will pick up its series of function calls at the bookmarked method.
 
     Parameters
     ----------
+    func : callable
+        The function executed when the Router is called.
+
     \*args, \*\*kwargs : 
-        Passed to `super().__init__`.
+        Arguments and keyword arguments passed to `func`.
 
     Attributes
     ----------
-    current_route : str
-        Name of the current 'route'. A route is one of the router's methods.
+    func : callable
+        Set from the `func` parameter.
 
     args : list, default=[]
-        Arguments for the current route, set from the `*args` parameter.
+        Set from the `*args` parameter.
 
     kwargs : dict, default={}
-        Keyword arguments for the current route, set from the `**kwargs` 
-        parameter.
+        Set from the `**kwargs` parameter.
+
+    init_func : callable
+        Set from the `func` parameter. `func` is reset to `init_func` when the Router's `reset` method is called.
+
+    init_args : list, default=[]
+        Set from the `*args` parameter. `args` is reset to `init_args` when the Router's `reset` method is called.
+
+    init_kwargs : dict, default={}
+        Similarly defined.
     """
-    current_route = Column(String)
-    args = Column(MutableListType)
-    kwargs = Column(MutableDictType)
+    _func = Column(String)
+    init_func = Column(PickleType)
+    init_args = Column(MutableListType)
+    init_kwargs = Column(MutableDictType)
 
-    def __init__(self, *args, **kwargs):
-        self.args = self.args or []
-        self.kwargs = self.kwargs or {}
-        super().__init__(*args, **kwargs)
+    @property
+    def func(self):
+        return getattr(self, self._func)
 
-    def route(self):
+    @func.setter
+    def func(self, val):
+        self._func = val.__name__
+
+    def __init__(self, func, *args, **kwargs):
+        self.init_func = func
+        self.init_args, self.init_kwargs = list(args), kwargs
+        super().__init__(func, *args, **kwargs)
+
+    def __call__(self):
         """
-        Route the request to the `current_route`.
+        Calls `self.func`, passing in `self.args` and `self.kwargs`.
 
         Returns
         -------
         page_html : str
             Html of the page returned by the current route.
         """
-        page_html = getattr(self, self.current_route)(
-            *self.args, **self.kwargs
-        )
-        current_app.extensions['manager'].db.session.commit()
+        page_html = super().__call__()
+        session = current_app.extensions['manager'].db.session
+        if not inspect(self).identity:
+            session.add(self)
+        session.commit()
         return page_html
 
-    def run_worker(self, worker, next_route, *args, **kwargs):
+    def reset(self):
         """
-        Run a Worker, and return a call to the next route when finished.
-
-        Parameters
-        ----------
-        worker : flask_worker.WorkerMixin
-            Worker whose job should be run.
-
-        next_route : callable
-            The route which should be run after the worker has finished its 
-            job.
-
-        \*args, \*\*kwargs :
-            Arguments and keyword arguments passed to `next_route`.
+        Reset `self.func`, `self.args`, and `self.kwargs` to their initial 
+        values.
 
         Returns
         -------
-        page_html : str
-            Html of the page returned by the worker (if the job is not yet ]finished) or the next route function (after the job is finished).
+        self : flask_worker.RouterMixin
         """
-        return next_route(*args,**kwargs) if worker.job_finished else worker()
+        self.set(self.init_func, *self.init_args, **self.init_kwargs)
+        return self
