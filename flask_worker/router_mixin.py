@@ -6,12 +6,15 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy_function import FunctionMixin
 from sqlalchemy_mutable import MutableListType, MutableDictType
 
+from functools import wraps
+
 def set_route(func):
     """
     The `@set_route` decorator bookmarks the current function call. 
     Specifically, it sets the Router's `func` to the the current function and 
     stores the args and kwargs.
     """
+    @wraps(func)
     def with_route_setting(router, *args, **kwargs):
         router.set(func, *args, **kwargs)
         return func(router, *args, **kwargs)
@@ -72,16 +75,22 @@ class RouterMixin(FunctionMixin):
         self.init_args, self.init_kwargs = list(args), kwargs
         super().__init__(func, *args, **kwargs)
 
-    def __call__(self):
+    def __call__(self, *args, **kwargs):
         """
         Calls `self.func`, passing in `self.args` and `self.kwargs`.
+
+        Parameters
+        ----------
+        \*args, \*\*kwargs :
+            Passed to `super().__call__`. See 
+            <https://github.com/dsbowen/sqlalchemy-function/>.
 
         Returns
         -------
         page_html : str
             Html of the page returned by the current route.
         """
-        page_html = super().__call__()
+        page_html = super().__call__(*args, **kwargs)
         session = current_app.extensions['manager'].db.session
         if not inspect(self).identity:
             session.add(self)

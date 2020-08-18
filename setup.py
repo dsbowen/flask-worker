@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="flask-worker",
-    version="0.0.9",
+    version="0.0.11",
     author="Dillon Bowen",
     author_email="dsbowen@wharton.upenn.edu",
     description="Flask-Worker simplifies interaction with a Redis Queue for executing long-running tasks in a Flask application.",
@@ -22,7 +22,7 @@ setuptools.setup(
         'sqlalchemy-function>=0.0.8',
         'sqlalchemy-modelid>=0.0.2',
         'sqlalchemy-mutable>=0.0.8',
-        'sqlalchemy-mutablesoup>=0.0.6',
+        'sqlalchemy-mutablesoup>=0.0.9',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

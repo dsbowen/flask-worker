@@ -98,6 +98,7 @@ class WorkerMixin(FunctionMixin, ModelIdBase):
         template = template or self.manager.template
         self.loading_page = render_template(template, worker=self)
         self.reset()
+        self.func = None
         self.args, self.kwargs = self.args or [], self.kwargs or {}
         [setattr(self, key, val) for key, val in kwargs.items()]
         super().__init__(self.func)
@@ -158,7 +159,7 @@ class WorkerMixin(FunctionMixin, ModelIdBase):
             callback_url=(self.callback or request.url)
         )
         script = BeautifulSoup(script_html, 'html.parser')
-        self.loading_page.select_one('head').append(script)
+        self.loading_page.select_one('body').append(script)
 
     def _execute_job(self):
         """Execute a job (i.e. the worker's task)

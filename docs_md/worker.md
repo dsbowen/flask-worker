@@ -31,10 +31,10 @@ class Worker(WorkerMixin, db.Model):
     name = db.Column(db.String)
 
     def __init__(self, name):
+        super().__init__()
         self.name = name
         # set the worker's complex task along with args and kwargs
         self.set(complex_task, seconds=5)
-        super().__init__()
 ```
 
 We'll also define a convenience method at the bottom of this file for database querying. This function returns a model of the type `class_` with the specified `name`. If this model does not yet exist, this function creates it.

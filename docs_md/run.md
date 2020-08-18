@@ -7,7 +7,7 @@ Make sure you have two terminal windows open, and navigate to your root director
 In one terminal window, we'll run the [Redis Queue](https://python-rq.org/).
 
 ```
-$ rq run my-task-queue
+$ rq worker my-task-queue
 ```
 
 In your window, you should see a message like:

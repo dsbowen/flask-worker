@@ -21,10 +21,10 @@ class Worker(WorkerMixin, db.Model):
     name = db.Column(db.String)
 
     def __init__(self, name):
+        super().__init__()
         self.name = name
         # set the worker's complex task along with args and kwargs
         self.set(complex_task, seconds=5)
-        super().__init__()
 
 
 def get_model(class_, name):
