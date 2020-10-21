@@ -2,6 +2,8 @@
 
 from factory import db
 
+from flask_worker import Worker
+from sqlalchemy_mutable import partial
 from flask_worker import WorkerMixin
 
 def complex_task(seconds):
@@ -21,10 +23,8 @@ class Worker(WorkerMixin, db.Model):
     name = db.Column(db.String)
 
     def __init__(self, name):
-        super().__init__()
+        super().__init__(func=partial(complex_task, seconds=5))
         self.name = name
-        # set the worker's complex task along with args and kwargs
-        self.set(complex_task, seconds=5)
 
 
 def get_model(class_, name):

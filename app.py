@@ -84,7 +84,9 @@ from models import Router
 
 @app.route('/router')
 def routing():
-    return get_model(Router, 'routing')()
+    router = get_model(Router, 'routing')
+    db.session.add(router)
+    return router()
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

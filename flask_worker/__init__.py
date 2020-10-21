@@ -2,19 +2,20 @@
 
 from flask_worker.router_mixin import RouterMixin, set_route
 from flask_worker.worker_mixin import WorkerMixin
+from .worker import Worker
 
 from flask import Blueprint, current_app, request, url_for
 import rq
 
-default_settings = {
-    'app_import': 'app.app',
-    'connection': None,
-    'db': None,
-    'loading_img_blueprint': None,
-    'loading_img_filename': 'worker_loading.gif',
-    'socketio': None,
-    'template': 'worker/worker_loading.html',
-}
+default_settings = dict(
+    app_import='app.app',
+    connection=None,
+    db=None,
+    loading_img_blueprint=None,
+    loading_img_filename='worker_loading.gif',
+    socketio=None,
+    template='worker/worker.html'
+)
 
 
 class Manager():

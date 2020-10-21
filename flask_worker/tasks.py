@@ -14,7 +14,7 @@ from pydoc import locate
 import os
 import sys
 
-def execute(app_import, worker_class, worker_id):
+def execute(app_import, worker_class, worker_id, args, kwargs):
     # push the app context
     sys.path.insert(0, os.getcwd())
     app = locate(app_import)
@@ -26,7 +26,7 @@ def execute(app_import, worker_class, worker_id):
     worker = worker_class.query.get(worker_id)
     namespace = '/'+worker.model_id
     socketio.emit('job_started', namespace=namespace)
-    result = worker._execute_job()
+    result = worker._execute_job(*args, **kwargs)
     db.session.commit()
     socketio.emit('job_finished', namespace=namespace)
     return result
