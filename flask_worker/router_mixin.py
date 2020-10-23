@@ -27,7 +27,6 @@ class partial(partial_base):
         self.args, self.kwargs = list(args), kwargs
 
     def __call__(self, router, *args, **kwargs):
-        print('self func is', self.func)
         func = getattr(router, self.func)
         kwargs_ = self.kwargs.unshell()
         kwargs_.update(kwargs)
