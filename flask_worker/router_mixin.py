@@ -22,6 +22,10 @@ def set_route(func):
 
 
 class partial(partial_base):
+    @property
+    def name(self):
+        return self.func
+
     def __init__(self, func, *args, **kwargs):
         self.func = func.__name__
         self.args, self.kwargs = list(args), kwargs
@@ -32,6 +36,9 @@ class partial(partial_base):
         kwargs_.update(kwargs)
         return func(*args, *self.args.unshell(), **kwargs)
 
+    def __repr__(self):
+        return '<{}>'.format(self.func)
+
 
 class RouterMixin():
     """
@@ -39,7 +46,10 @@ class RouterMixin():
     initiated by a view function. These function calls must be methods of the 
     Router.
 
-    Suppose a view function initiates a series of function calls which include calling a Router. The Router can 'bookmark' its methods; if this Router is called in the future, it will pick up its series of function calls at the bookmarked method.
+    Suppose a view function initiates a series of function calls which include 
+    calling a Router. The Router can 'bookmark' its methods; if this Router is 
+    called in the future, it will pick up its series of function calls at the 
+    bookmarked method.
 
     Parameters
     ----------
@@ -55,10 +65,23 @@ class RouterMixin():
         Set from the `func` parameter.
 
     init_func : callable
-        Set from the `func` parameter. `func` is reset to `init_func` when the Router's `reset` method is called.
+        Set from the `func` parameter. `func` is reset to `init_func` when the 
+        Router's `reset` method is called.
     """
-    func = Column(MutableType)
+    _func = Column(MutableType)
     init_func = Column(MutableType)
+
+    @property
+    def func(self):
+        return self._func or self.init_func
+
+    @func.setter
+    def func(self, val):
+        if val is None:
+            self._func = val
+        else:
+            assert(callable(val))
+            self._func = val if isinstance(val, partial) else partial(val)
 
     def __init__(self, func, *args, **kwargs):
         super().__init__()
@@ -78,8 +101,7 @@ class RouterMixin():
         page_html : str
             Html of the page returned by the current route.
         """
-        func = self.func or self.init_func
-        page_html = func(self, *args, **kwargs)
+        page_html = self.func(self, *args, **kwargs)
         session = current_app.extensions['manager'].db.session
         if not inspect(self).identity:
             session.add(self)
