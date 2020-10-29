@@ -7,6 +7,26 @@ from sqlalchemy_modelid import ModelIdBase
 from sqlalchemy_mutable import MutableType
 
 
+def enqueue(enqueue_method):
+    # wraps the worker's enqueueing methods
+    def enqueue_wrapper(worker, *args, **kwargs):
+        if inspect(worker).identity is None:
+            # ensure the worker has an id
+            session = worker.manager.db.session
+            session.add(worker)
+            session.commit()
+        if not worker.job_in_progress:
+            # avoid repeat enqueuing
+            job = enqueue_method(worker, *args, **kwargs)
+            worker.job_finished, worker.job_in_progress = False, True
+            worker.job_id = job.get_id()
+            worker.manager.db.session.commit()
+        # return the loading page HTML
+        return render_template(worker.template, worker=worker)
+
+    return enqueue_wrapper
+
+
 class WorkerMixin(ModelIdBase):
     """
     The worker executes a complex task using a Redis queue. When called, it 
@@ -19,32 +39,32 @@ class WorkerMixin(ModelIdBase):
 
     Parameters
     ----------
-    template : str or None, default=None
-        Name of the html template file for the worker's loading page. If 
-        `None`, the worker will use the manager's loading page template.
-
-    \*\*kwargs :
-        You can set the worker's attributes by passing them as keyword 
-        arguments.
-
-    Attributes
-    ----------
-    manager : flask_worker.Manager
-        The worker's manager.
-
-    func : callable
-        Function which the worker will execute.
-
-    args : list, default=[]
-        Arguments which will be passed to the executed method.
-
-    kwargs : dict, default={}
-        Keyword arguments which will be passed to the executed method.
-
     callback : str or None, default=None
         Name of the view function to which the client will navigate once the 
         worker has finished its job. If `None`, the current view function is 
         re-called.
+
+    template : str or None, default=None
+        Name of the html template file for the worker's loading page. If 
+        `None`, the worker will use the manager's loading page template.
+
+    loading_img_src : str or None, default=None
+        Source of the loading image. If `None` the worker will use the 
+        manager's loading image.
+
+    Attributes
+    ----------
+    callback : str
+        Set from the `callback` parameter.
+
+    template : str
+        Set from the `template` parameter.
+
+    loading_img_src : str
+        Set from the `loading_img_src` parameter.
+
+    manager : flask_worker.Manager
+        The worker's manager.
 
     job_finished : bool, default=False
         Indicates that the worker has finished its job.
@@ -54,19 +74,6 @@ class WorkerMixin(ModelIdBase):
 
     job_id : str
         Identifier for the worker's job.
-
-    loading_page : sqlalchemy_mutablesoup.MutableSoup
-        Loading page which will be displayed to the client while the worker performs its job.
-
-    loading_img : bs4.Tag
-        `<img>` tag for the loading image.
-
-    loading_img_src : str
-        Source of the loading image.
-
-    result :
-        Output of the worker's function. This stores the result of the job 
-        the worker executed.
     """
     _callback = Column(String)
     job_finished = Column(Boolean, default=False)
@@ -74,7 +81,6 @@ class WorkerMixin(ModelIdBase):
     job_id = Column(String)
     template = Column(String)
     loading_img_src = Column(String)
-    result = Column(MutableType)
 
     @property
     def callback(self):
@@ -104,68 +110,73 @@ class WorkerMixin(ModelIdBase):
 
     def reset(self):
         """
-        Clears the `job_finished`, `job_in_progress`, and `job_id` attributes.
+        Resets the `job_finished`, `job_in_progress`, and `job_id` attributes.
 
         Returns
         -------
-        self : flask_worker.WorkerMixin
+        self :
         """
         self.job_finished, self.job_in_progress = False, False
         self.job_id = None
         return self
 
-    def enqueue_method(self, obj, method_name, *args, **kwargs):
-        def enqueue():
-            job = current_app.task_queue.enqueue(
-                'flask_worker.tasks.execute_method',
-                kwargs=dict(
-                    app_import=self.manager.app_import,
-                    worker_cls=self.__class__, 
-                    worker_id=inspect(self).identity[0],
-                    obj_cls=type(obj),
-                    obj_id=inspect(obj).identity[0],
-                    method_name=method_name, args=args, kwargs=kwargs
-                )
-            )
-            self.job_finished, self.job_in_progress = False, True
-            self.job_id = job.get_id()
-
-        if inspect(self).identity is None:
-            session = self.manager.db.session
-            session.add(self)
-            session.commit()
-        if not self.job_in_progress:
-            enqueue()
-            self.manager.db.session.commit()
-        return render_template(self.template, worker=self)
-    
-    def enqueue_function(self, func, *args, **kwargs):
+    @enqueue
+    def enqueue_method(self, model, method_name, *args, **kwargs):
         """
-        Enqueue the worker's job for execution if it is not enqueued already.
+        Enqueue a database model's method for execution.
+
+        Parameters
+        ----------
+        model : db.Model
+            Model whose method will be enqueued.
+
+        method_name : str
+            Name of the model's method to enqueue.
+
+        \*args, \*\*kwargs :
+            Arguments and keyword arguments passed to the method.
 
         Returns
         -------
         loading_page : str (html)
             The client's loading page.
         """
-        def enqueue():
-            job = current_app.task_queue.enqueue(
-                'flask_worker.tasks.execute_func',
-                kwargs=dict(
-                    app_import=self.manager.app_import,
-                    worker_cls=type(self), 
-                    worker_id=inspect(self).identity[0],
-                    func=func, args=args, kwargs=kwargs
-                )
+        return current_app.task_queue.enqueue(
+            'flask_worker.tasks.execute_method',
+            kwargs=dict(
+                app_import=self.manager.app_import,
+                worker_cls=self.__class__, 
+                worker_id=inspect(self).identity[0],
+                model_cls=type(model),
+                model_id=inspect(model).identity[0],
+                method_name=method_name, args=args, kwargs=kwargs
             )
-            self.job_finished, self.job_in_progress = False, True
-            self.job_id = job.get_id()
+        )
+    
+    @enqueue
+    def enqueue_function(self, func, *args, **kwargs):
+        """
+        Enqueue the a function for execution.
 
-        if inspect(self).identity is None:
-            session = self.manager.db.session
-            session.add(self)
-            session.commit()
-        if not self.job_in_progress:
-            enqueue()
-            self.manager.db.session.commit()
-        return render_template(self.template, worker=self)
+        Parameters
+        ----------
+        func : callable
+            Function which will be enqueued.
+
+        \*args, \*\*kwargs :
+            Arguments and keyword arguments passed to the function.
+
+        Returns
+        -------
+        loading_page : str (html)
+            The client's loading page.
+        """
+        return current_app.task_queue.enqueue(
+            'flask_worker.tasks.execute_func',
+            kwargs=dict(
+                app_import=self.manager.app_import,
+                worker_cls=type(self), 
+                worker_id=inspect(self).identity[0],
+                func=func, args=args, kwargs=kwargs
+            )
+        )

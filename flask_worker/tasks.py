@@ -16,19 +16,28 @@ import sys
 
 def execute_method(
     app_import, worker_cls, worker_id,
-    obj_cls, obj_id, method_name, args, kwargs, 
+    model_cls, model_id, method_name, args, kwargs, 
 ):
+    """
+    Execute a database model's method. See `execute_method` in 
+    `worker_mixin.py` for parameter details.
+    """
     manager = JobManager().prepare_job(app_import, worker_cls, worker_id)
-    obj = obj_cls.query.get(obj_id)
-    result = getattr(obj, method_name)(*args, **kwargs)
+    model = model_cls.query.get(model_id)
+    result = getattr(model, method_name)(*args, **kwargs)
     manager.finish_job()
     return result
 
 def execute_func(app_import, worker_cls, worker_id, func, args, kwargs):
+    """
+    Execute a function. See `execute_function` in `worker_mixin.py` for 
+    parameter details.
+    """
     manager = JobManager().prepare_job(app_import, worker_cls, worker_id)
     result = func(*args, **kwargs)
     manager.finish_job()
     return result
+
 
 class JobManager():
     def prepare_job(self, app_import, worker_cls, worker_id):

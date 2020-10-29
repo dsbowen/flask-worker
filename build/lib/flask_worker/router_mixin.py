@@ -1,10 +1,9 @@
 """# Routers"""
 
 from flask import current_app
-from sqlalchemy import Column, PickleType, String
+from sqlalchemy import Column, String
 from sqlalchemy.inspection import inspect
-from sqlalchemy_function import FunctionMixin
-from sqlalchemy_mutable import MutableListType, MutableDictType
+from sqlalchemy_mutable import MutableType, partial as partial_base
 
 from functools import wraps
 
@@ -16,18 +15,47 @@ def set_route(func):
     """
     @wraps(func)
     def with_route_setting(router, *args, **kwargs):
-        router.set(func, *args, **kwargs)
+        router.func = partial(func, *args, **kwargs)
         return func(router, *args, **kwargs)
+        
     return with_route_setting
 
 
-class RouterMixin(FunctionMixin):
+class partial(partial_base):
+    """
+    This functions like partial, but instead of storing a function directly,
+    it stores the name of a Router method. When called, the router is passed
+    as the first argument, allowing partial to look up and execute that 
+    method. 
+    """
+    @property
+    def name(self):
+        return self.func
+
+    def __init__(self, func, *args, **kwargs):
+        self.func = func.__name__
+        self.args, self.kwargs = list(args), kwargs
+
+    def __call__(self, router, *args, **kwargs):
+        func = getattr(router, self.func)
+        kwargs_ = self.kwargs.unshell()
+        kwargs_.update(kwargs)
+        return func(*args, *self.args.unshell(), **kwargs)
+
+    def __repr__(self):
+        return '<{}>'.format(self.func)
+
+
+class RouterMixin():
     """
     Mixin for Router models. A Router manages a series of function calls 
     initiated by a view function. These function calls must be methods of the 
     Router.
 
-    Suppose a view function initiates a series of function calls which include calling a Router. The Router can 'bookmark' its methods; if this Router is called in the future, it will pick up its series of function calls at the bookmarked method.
+    Suppose a view function initiates a series of function calls which include 
+    calling a Router. The Router can 'bookmark' its methods; if this Router is 
+    called in the future, it will pick up its series of function calls at the 
+    bookmarked method.
 
     Parameters
     ----------
@@ -42,38 +70,28 @@ class RouterMixin(FunctionMixin):
     func : callable
         Set from the `func` parameter.
 
-    args : list, default=[]
-        Set from the `*args` parameter.
-
-    kwargs : dict, default={}
-        Set from the `**kwargs` parameter.
-
     init_func : callable
-        Set from the `func` parameter. `func` is reset to `init_func` when the Router's `reset` method is called.
-
-    init_args : list, default=[]
-        Set from the `*args` parameter. `args` is reset to `init_args` when the Router's `reset` method is called.
-
-    init_kwargs : dict, default={}
-        Similarly defined.
+        Set from the `func` parameter. `func` is reset to `init_func` when the 
+        Router's `reset` method is called.
     """
-    _func = Column(String)
-    init_func = Column(PickleType)
-    init_args = Column(MutableListType)
-    init_kwargs = Column(MutableDictType)
+    _func = Column(MutableType)
+    init_func = Column(MutableType)
 
     @property
     def func(self):
-        return getattr(self, self._func)
+        return self._func or self.init_func
 
     @func.setter
     def func(self, val):
-        self._func = val.__name__
+        if val is None:
+            self._func = val
+        else:
+            assert(callable(val))
+            self._func = val if isinstance(val, partial) else partial(val)
 
     def __init__(self, func, *args, **kwargs):
-        self.init_func = func
-        self.init_args, self.init_kwargs = list(args), kwargs
-        super().__init__(func, *args, **kwargs)
+        super().__init__()
+        self.init_func = partial(func, *args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """
@@ -82,15 +100,14 @@ class RouterMixin(FunctionMixin):
         Parameters
         ----------
         \*args, \*\*kwargs :
-            Passed to `super().__call__`. See 
-            <https://github.com/dsbowen/sqlalchemy-function/>.
+            Passed to the current function call.
 
         Returns
         -------
         page_html : str
             Html of the page returned by the current route.
         """
-        page_html = super().__call__(*args, **kwargs)
+        page_html = self.func(self, *args, **kwargs)
         session = current_app.extensions['manager'].db.session
         if not inspect(self).identity:
             session.add(self)
@@ -99,12 +116,11 @@ class RouterMixin(FunctionMixin):
 
     def reset(self):
         """
-        Reset `self.func`, `self.args`, and `self.kwargs` to their initial 
-        values.
+        Reset the series of function calls to its initial state.
 
         Returns
         -------
         self : flask_worker.RouterMixin
         """
-        self.set(self.init_func, *self.init_args, **self.init_kwargs)
+        self.func = None
         return self

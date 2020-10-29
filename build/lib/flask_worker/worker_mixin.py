@@ -1,15 +1,33 @@
 """# Workers"""
 
-from bs4 import BeautifulSoup
 from flask import current_app, render_template, request
-from sqlalchemy import Boolean, Column, PickleType, String
+from sqlalchemy import Boolean, Column, String
 from sqlalchemy.inspection import inspect
-from sqlalchemy_function import FunctionMixin
 from sqlalchemy_modelid import ModelIdBase
-from sqlalchemy_mutablesoup import MutableSoupType
+from sqlalchemy_mutable import MutableType
 
 
-class WorkerMixin(FunctionMixin, ModelIdBase):
+def enqueue(enqueue_method):
+    # wraps the worker's enqueueing methods
+    def enqueue_wrapper(worker, *args, **kwargs):
+        if inspect(worker).identity is None:
+            # ensure the worker has an id
+            session = worker.manager.db.session
+            session.add(worker)
+            session.commit()
+        if not worker.job_in_progress:
+            # avoid repeat enqueuing
+            job = enqueue_method(worker, *args, **kwargs)
+            worker.job_finished, worker.job_in_progress = False, True
+            worker.job_id = job.get_id()
+            worker.manager.db.session.commit()
+        # return the loading page HTML
+        return render_template(worker.template, worker=worker)
+
+    return enqueue_wrapper
+
+
+class WorkerMixin(ModelIdBase):
     """
     The worker executes a complex task using a Redis queue. When called, it 
     enqueues a job and returns a loading page.
@@ -21,32 +39,32 @@ class WorkerMixin(FunctionMixin, ModelIdBase):
 
     Parameters
     ----------
-    template : str or None, default=None
-        Name of the html template file for the worker's loading page. If 
-        `None`, the worker will use the manager's loading page template.
-
-    \*\*kwargs :
-        You can set the worker's attributes by passing them as keyword 
-        arguments.
-
-    Attributes
-    ----------
-    manager : flask_worker.Manager
-        The worker's manager.
-
-    func : callable
-        Function which the worker will execute.
-
-    args : list, default=[]
-        Arguments which will be passed to the executed method.
-
-    kwargs : dict, default={}
-        Keyword arguments which will be passed to the executed method.
-
     callback : str or None, default=None
         Name of the view function to which the client will navigate once the 
         worker has finished its job. If `None`, the current view function is 
         re-called.
+
+    template : str or None, default=None
+        Name of the html template file for the worker's loading page. If 
+        `None`, the worker will use the manager's loading page template.
+
+    loading_img_src : str or None, default=None
+        Source of the loading image. If `None` the worker will use the 
+        manager's loading image.
+
+    Attributes
+    ----------
+    callback : str
+        Set from the `callback` parameter.
+
+    template : str
+        Set from the `template` parameter.
+
+    loading_img_src : str
+        Set from the `loading_img_src` parameter.
+
+    manager : flask_worker.Manager
+        The worker's manager.
 
     job_finished : bool, default=False
         Indicates that the worker has finished its job.
@@ -56,116 +74,109 @@ class WorkerMixin(FunctionMixin, ModelIdBase):
 
     job_id : str
         Identifier for the worker's job.
-
-    loading_page : sqlalchemy_mutablesoup.MutableSoup
-        Loading page which will be displayed to the client while the worker performs its job.
-
-    loading_img : bs4.Tag
-        `<img>` tag for the loading image.
-
-    loading_img_src : str
-        Source of the loading image.
-
-    result :
-        Output of the worker's function. This stores the result of the job 
-        the worker executed.
     """
-    callback = Column(String)
+    _callback = Column(String)
     job_finished = Column(Boolean, default=False)
     job_in_progress = Column(Boolean, default=False)
     job_id = Column(String)
-    loading_page = Column(MutableSoupType)
-    result = Column(PickleType)
+    template = Column(String)
+    loading_img_src = Column(String)
+
+    @property
+    def callback(self):
+        if self._callback:
+            return self._callback
+        try:
+            # if operating in request context
+            return request.url
+        except:
+            # operating outside request context
+            return self._callback
+
+    @callback.setter
+    def callback(self, val):
+        self._callback = val
 
     @property
     def manager(self):
         return current_app.extensions['manager']
 
-    @property
-    def loading_img(self):
-        return self.loading_page.select_one('img')
-
-    @property
-    def loading_img_src(self):
-        return self.loading_img.attrs.get('src')
-
-    @loading_img_src.setter
-    def loading_img_src(self, src):
-        self.loading_img['src'] = src or ''
-        self.loading_img.changed()
-
-    def __init__(self, template=None, **kwargs):
-        template = template or self.manager.template
-        self.loading_page = render_template(template, worker=self)
+    def __init__(self, callback=None, template=None, loading_img_src=None):
+        self.callback = callback
+        self.template = template or self.manager.template
+        self.loading_img_src = loading_img_src or self.manager.loading_img_src
         self.reset()
-        self.func = None
-        self.args, self.kwargs = self.args or [], self.kwargs or {}
-        [setattr(self, key, val) for key, val in kwargs.items()]
-        super().__init__(self.func)
+        super().__init__()
 
     def reset(self):
         """
-        Clears the `job_finished`, `job_in_progress`, and `job_id` attributes.
+        Resets the `job_finished`, `job_in_progress`, and `job_id` attributes.
 
         Returns
         -------
-        self : flask_worker.WorkerMixin
+        self :
         """
         self.job_finished, self.job_in_progress = False, False
         self.job_id = None
         return self
-    
-    def __call__(self):
+
+    @enqueue
+    def enqueue_method(self, model, method_name, *args, **kwargs):
         """
-        Enqueue the worker's job for execution if it is not enqueued already.
+        Enqueue a database model's method for execution.
+
+        Parameters
+        ----------
+        model : db.Model
+            Model whose method will be enqueued.
+
+        method_name : str
+            Name of the model's method to enqueue.
+
+        \*args, \*\*kwargs :
+            Arguments and keyword arguments passed to the method.
 
         Returns
         -------
         loading_page : str (html)
             The client's loading page.
         """
-        if self._get_id() is None:
-            session = self.manager.db.session
-            session.add(self)
-            session.commit()
-        if not self.job_in_progress:
-            self._enqueue()
-        self._add_script()
-        return str(self.loading_page)
-
-    def _get_id(self):
-        id = inspect(self).identity
-        return id[0] if id else None
-
-    def _enqueue(self):
-        """Send a job to the Redis Queue"""
-        job = current_app.task_queue.enqueue(
-            'flask_worker.tasks.execute',
-            kwargs={
-                'app_import': self.manager.app_import,
-                'worker_class': type(self), 
-                'worker_id': self._get_id()
-            }
+        return current_app.task_queue.enqueue(
+            'flask_worker.tasks.execute_method',
+            kwargs=dict(
+                app_import=self.manager.app_import,
+                worker_cls=self.__class__, 
+                worker_id=inspect(self).identity[0],
+                model_cls=type(model),
+                model_id=inspect(model).identity[0],
+                method_name=method_name, args=args, kwargs=kwargs
+            )
         )
-        self.job_finished, self.job_in_progress = False, True
-        self.job_id = job.get_id()
-        self.manager.db.session.commit()
-
-    def _add_script(self):
-        """Add the worker script to the loading page"""
-        script_html = render_template(
-            'worker/worker_script.html',
-            worker=self,
-            callback_url=(self.callback or request.url)
-        )
-        script = BeautifulSoup(script_html, 'html.parser')
-        self.loading_page.select_one('body').append(script)
-
-    def _execute_job(self):
-        """Execute a job (i.e. the worker's task)
-
-        This method is called by a Redis worker.
+    
+    @enqueue
+    def enqueue_function(self, func, *args, **kwargs):
         """
-        self.result = super().__call__()
-        self.job_finished, self.job_in_progress = True, False
-        return self.result
+        Enqueue the a function for execution.
+
+        Parameters
+        ----------
+        func : callable
+            Function which will be enqueued.
+
+        \*args, \*\*kwargs :
+            Arguments and keyword arguments passed to the function.
+
+        Returns
+        -------
+        loading_page : str (html)
+            The client's loading page.
+        """
+        return current_app.task_queue.enqueue(
+            'flask_worker.tasks.execute_func',
+            kwargs=dict(
+                app_import=self.manager.app_import,
+                worker_cls=type(self), 
+                worker_id=inspect(self).identity[0],
+                func=func, args=args, kwargs=kwargs
+            )
+        )

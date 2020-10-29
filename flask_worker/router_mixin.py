@@ -22,6 +22,12 @@ def set_route(func):
 
 
 class partial(partial_base):
+    """
+    This functions like partial, but instead of storing a function directly,
+    it stores the name of a Router method. When called, the router is passed
+    as the first argument, allowing partial to look up and execute that 
+    method. 
+    """
     @property
     def name(self):
         return self.func

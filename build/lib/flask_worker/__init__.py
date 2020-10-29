@@ -6,15 +6,16 @@ from flask_worker.worker_mixin import WorkerMixin
 from flask import Blueprint, current_app, request, url_for
 import rq
 
-default_settings = {
-    'app_import': 'app.app',
-    'connection': None,
-    'db': None,
-    'loading_img_blueprint': None,
-    'loading_img_filename': 'worker_loading.gif',
-    'socketio': None,
-    'template': 'worker/worker_loading.html',
-}
+default_settings = dict(
+    app_import='app.app',
+    connection=None,
+    db=None,
+    loading_img_src=None,
+    loading_img_blueprint=None,
+    loading_img_filename='worker_loading.gif',
+    socketio=None,
+    template='worker/worker.html'
+)
 
 
 class Manager():
@@ -136,9 +137,15 @@ class Manager():
 
     @property
     def loading_img_src(self):
+        if hasattr(self, '_loading_img_src') and self._loading_img_src:
+            return self._loading_img_src
         try:
             bp = self.loading_img_blueprint
             static = bp + '.static' if bp else 'static'
             return url_for(static, filename=self.loading_img_filename)
         except:
             pass
+
+    @loading_img_src.setter
+    def loading_img_src(self, val):
+        self._loading_img_src = val
